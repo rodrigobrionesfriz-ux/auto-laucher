@@ -36,6 +36,11 @@ class MainActivity : Activity() {
     private lateinit var musicTitle: TextView
     private lateinit var musicArtist: TextView
     private lateinit var btnPlay: ImageButton
+    private lateinit var musicArt: ImageView
+    private lateinit var musicProgress: android.widget.ProgressBar
+    private lateinit var musicElapsed: TextView
+    private lateinit var musicTotal: TextView
+    private var artShown: android.graphics.Bitmap? = null
 
     private var lm: LocationManager? = null
     private var gpsRunning = false
@@ -78,6 +83,11 @@ class MainActivity : Activity() {
         musicTitle = findViewById(R.id.musicTitle)
         musicArtist = findViewById(R.id.musicArtist)
         btnPlay = findViewById(R.id.btnPlay)
+        musicArt = findViewById(R.id.musicArt)
+        musicProgress = findViewById(R.id.musicProgress)
+        musicElapsed = findViewById(R.id.musicElapsed)
+        musicTotal = findViewById(R.id.musicTotal)
+        Music.register(this)
 
         lm = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
@@ -118,6 +128,11 @@ class MainActivity : Activity() {
         startGps()
         handler.removeCallbacks(ticker)
         handler.post(ticker)
+    }
+
+    override fun onDestroy() {
+        Music.unregister(this)
+        super.onDestroy()
     }
 
     override fun onPause() {
@@ -252,7 +267,7 @@ class MainActivity : Activity() {
         }
 
         updateWeatherIfNeeded(now)
-        if (now / 1000 % 2 == 0L) refreshMusic()
+        refreshMusic()
     }
 
     // ---------- Clima ----------
@@ -289,23 +304,55 @@ class MainActivity : Activity() {
     }
 
     private fun refreshMusic() {
-        if (!Music.hasAccess(this)) {
-            musicSource.text = "Música"
-            musicTitle.text = "Controles de música"
-            musicArtist.text = "Toca aquí para mostrar la canción"
-            return
-        }
         val np = Music.nowPlaying(this)
         if (np == null || np.title.isNullOrBlank()) {
             musicSource.text = np?.source ?: "Música"
-            musicTitle.text = "Sin reproducción"
-            musicArtist.text = "Toca para abrir tu app de música"
+            if (Music.hasAccess(this)) {
+                musicTitle.text = "Sin reproducción"
+                musicArtist.text = "Toca para abrir tu app de música"
+            } else {
+                musicTitle.text = "Controles de música"
+                musicArtist.text = "Toca aquí para mostrar la canción"
+            }
             btnPlay.setImageResource(R.drawable.ic_play)
+            showArt(null)
+            showTimes(-1, -1)
             return
         }
-        musicSource.text = np.source ?: "Música"
+        musicSource.text = np.source
         musicTitle.text = np.title
-        musicArtist.text = np.artist ?: ""
+        musicArtist.text = listOfNotNull(np.artist, np.album).filter { it.isNotBlank() }.joinToString(" · ")
         btnPlay.setImageResource(if (np.playing) R.drawable.ic_pause else R.drawable.ic_play)
+        showTimes(np.positionMs, np.durationMs)
+        showArt(np.art ?: AlbumArt.get(np.artist, np.title!!) {
+            runOnUiThread { refreshMusic() }
+        })
+    }
+
+    private fun showArt(bmp: android.graphics.Bitmap?) {
+        if (bmp === artShown && (bmp != null || musicArt.drawable != null)) return
+        artShown = bmp
+        val pad = if (bmp == null) (26 * resources.displayMetrics.density).toInt() else 0
+        musicArt.setPadding(pad, pad, pad, pad)
+        if (bmp == null) {
+            musicArt.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_dim))
+            musicArt.setImageResource(R.drawable.ic_music)
+        } else {
+            musicArt.imageTintList = null
+            musicArt.setImageBitmap(bmp)
+        }
+    }
+
+    private fun showTimes(pos: Long, dur: Long) {
+        val known = dur > 0
+        musicProgress.visibility = if (known) android.view.View.VISIBLE else android.view.View.INVISIBLE
+        musicElapsed.text = if (pos >= 0) fmt(pos) else ""
+        musicTotal.text = if (known) fmt(dur) else ""
+        if (known) musicProgress.progress = ((pos.coerceIn(0, dur) * 1000) / dur).toInt()
+    }
+
+    private fun fmt(ms: Long): String {
+        val s = ms / 1000
+        return "%d:%02d".format(s / 60, s % 60)
     }
 }
