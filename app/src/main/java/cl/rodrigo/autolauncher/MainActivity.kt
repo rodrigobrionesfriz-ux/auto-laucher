@@ -154,6 +154,7 @@ class MainActivity : Activity() {
         startGps()
         handler.removeCallbacks(ticker)
         handler.post(ticker)
+        Updater.checkInBackground(this)
     }
 
     override fun onDestroy() {
@@ -281,6 +282,7 @@ class MainActivity : Activity() {
             "Modo noche: $modeName",
             "Aviso de velocidad: ${Prefs.speedLimit(this)} km/h",
             "Luces del vehículo",
+            "Buscar actualización (tienes ${Updater.currentName(this)})",
             "Diagnóstico",
         )
         AlertDialog.Builder(this).setItems(items) { _, which ->
@@ -300,7 +302,8 @@ class MainActivity : Activity() {
                         }.show()
                 }
                 2 -> lightsMenu()
-                3 -> startActivity(Intent(this, DiagActivity::class.java))
+                3 -> Updater.checkNow(this)
+                4 -> startActivity(Intent(this, DiagActivity::class.java))
             }
         }.show()
     }
