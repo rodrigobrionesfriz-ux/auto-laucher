@@ -187,11 +187,11 @@ class MainActivity : Activity() {
             return row.findViewById(R.id.rowBody)
         }
 
+        val iconPx = (58 * resources.displayMetrics.density).toInt()
         fun appIcon(pkg: String?, iv: ImageView): Boolean {
             if (pkg == null || pkg == Apps.SETTINGS) return false
             return try {
-                iv.setImageDrawable(packageManager.getApplicationIcon(pkg))
-                iv.imageTintList = null
+                iv.setImageDrawable(Icons.app(this, packageManager.getApplicationIcon(pkg), iconPx))
                 true
             } catch (e: Exception) { false }
         }
@@ -201,7 +201,7 @@ class MainActivity : Activity() {
             val body: View
             if (slot != null) {
                 body = addRow(slot.label) { iv ->
-                    if (!appIcon(Apps.assigned(this, slot), iv)) iv.setImageResource(slot.icon)
+                    if (!appIcon(Apps.assigned(this, slot), iv)) iv.setImageDrawable(Icons.glyph(this, slot.key, slot.icon, iconPx))
                 }
                 body.setOnClickListener { Apps.open(this, slot) { buildDock() } }
             } else if (key.startsWith("pkg:")) {

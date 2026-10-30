@@ -169,7 +169,7 @@
     <!-- Abajo: música -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="92dp"
+        android:layout_height="108dp"
         android:background="@drawable/bg_bottom"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -195,7 +195,7 @@
                 android:maxLines="1"
                 android:text="Música"
                 android:textColor="@color/accent"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
 
             <TextView
                 android:id="@+id/musicTitle"
@@ -206,7 +206,7 @@
                 android:singleLine="true"
                 android:text="Sin reproducción"
                 android:textColor="@color/text"
-                android:textSize="19sp"
+                android:textSize="25sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -214,7 +214,7 @@
                 style="@style/Dim"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="15sp" />
+                android:textSize="18sp" />
         </LinearLayout>
 
         <TextView
@@ -233,7 +233,7 @@
             android:layout_height="6dp"
             android:layout_marginStart="12dp"
             android:layout_marginEnd="12dp"
-            android:layout_weight="0.7"
+            android:layout_weight="0.55"
             android:max="1000"
             android:progressBackgroundTint="@color/card_stroke"
             android:progressTint="@color/accent" />
@@ -247,36 +247,36 @@
 
         <ImageButton
             android:id="@+id/btnPrev"
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:layout_marginStart="12dp"
+            android:layout_width="84dp"
+            android:layout_height="84dp"
+            android:layout_marginStart="10dp"
             android:background="@drawable/bg_round"
             android:contentDescription="Anterior"
-            android:padding="16dp"
+            android:padding="20dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_prev"
             android:tint="@color/text" />
 
         <ImageButton
             android:id="@+id/btnPlay"
-            android:layout_width="68dp"
-            android:layout_height="68dp"
-            android:layout_marginStart="10dp"
-            android:layout_marginEnd="10dp"
+            android:layout_width="92dp"
+            android:layout_height="92dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
             android:background="@drawable/bg_circle"
             android:contentDescription="Reproducir"
-            android:padding="18dp"
+            android:padding="24dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_play"
             android:tint="@color/text" />
 
         <ImageButton
             android:id="@+id/btnNext"
-            android:layout_width="64dp"
-            android:layout_height="64dp"
+            android:layout_width="84dp"
+            android:layout_height="84dp"
             android:background="@drawable/bg_round"
             android:contentDescription="Siguiente"
-            android:padding="16dp"
+            android:padding="20dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_next"
             android:tint="@color/text" />
