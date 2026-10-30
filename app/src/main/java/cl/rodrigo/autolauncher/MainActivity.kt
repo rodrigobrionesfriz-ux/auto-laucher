@@ -115,15 +115,26 @@ class MainActivity : Activity() {
 
         val musicInfo = findViewById<LinearLayout>(R.id.musicInfo)
         musicInfo.setOnClickListener {
-            if (!Music.hasAccess(this)) {
-                if (!Music.openAccessSettings(this)) {
-                    Toast.makeText(this, "Esta radio no permite ver la canción actual", Toast.LENGTH_LONG).show()
+            when {
+                !Music.hasAccess(this) -> {
+                    if (!Music.openAccessSettings(this)) {
+                        Toast.makeText(this, "Esta radio no permite ver la canción actual", Toast.LENGTH_LONG).show()
+                    }
                 }
-            } else {
-                Apps.open(this, Apps.musicSlot) {}
+                // Con música Bluetooth sonando no abrimos nada: se controla con los botones
+                !Music.syuTitle.isNullOrBlank() ->
+                    Toast.makeText(this, "Mantén presionado para abrir la app de música", Toast.LENGTH_SHORT).show()
+                else -> Apps.open(this, Apps.musicSlot) {}
             }
         }
-        musicInfo.setOnLongClickListener { Apps.pick(this, Apps.musicSlot) {}; true }
+        musicInfo.setOnLongClickListener {
+            android.app.AlertDialog.Builder(this)
+                .setItems(arrayOf("Abrir app de música", "Cambiar app de música")) { _, which ->
+                    if (which == 0) Apps.open(this, Apps.musicSlot) {} else Apps.pick(this, Apps.musicSlot) {}
+                }
+                .show()
+            true
+        }
 
         findViewById<LinearLayout>(R.id.weatherBox).setOnClickListener {
             weatherAt = 0; weatherTryAt = 0
