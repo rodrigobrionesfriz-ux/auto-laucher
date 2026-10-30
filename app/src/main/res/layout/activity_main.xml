@@ -2,23 +2,24 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg"
-    android:orientation="vertical"
-    android:padding="12dp">
+    android:background="@drawable/bg_main"
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="10dp">
 
-        <!-- Reloj, fecha y clima -->
+        <!-- Izquierda: hora, clima y carátula -->
         <LinearLayout
-            style="@style/Card"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center_vertical"
+            android:layout_weight="0.95"
             android:orientation="vertical">
 
             <TextClock
@@ -30,38 +31,31 @@
                 android:format24Hour="HH:mm"
                 android:includeFontPadding="false"
                 android:textColor="@color/text"
-                android:textSize="76sp" />
+                android:textSize="60sp" />
 
             <TextClock
                 android:id="@+id/date"
                 style="@style/Dim"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
                 android:format12Hour="EEEE d 'de' MMMM"
                 android:format24Hour="EEEE d 'de' MMMM"
-                android:textSize="19sp" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="18dp"
-                android:layout_marginBottom="18dp"
-                android:background="@color/card_stroke" />
+                android:textSize="15sp" />
 
             <LinearLayout
                 android:id="@+id/weatherBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/bg_plain"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <ImageView
                     android:id="@+id/weatherIcon"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:layout_marginEnd="10dp"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
                     android:src="@drawable/wx_cloud"
                     android:visibility="gone" />
 
@@ -71,12 +65,12 @@
                     android:layout_height="wrap_content"
                     android:text="--°"
                     android:textColor="@color/text"
-                    android:textSize="44sp" />
+                    android:textSize="34sp" />
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
+                    android:layout_marginStart="10dp"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -84,19 +78,19 @@
                         android:id="@+id/weatherDesc"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:ellipsize="end"
                         android:maxLines="1"
                         android:text="Esperando ubicación"
                         android:textColor="@color/text"
-                        android:textSize="18sp" />
+                        android:textSize="15sp" />
 
                     <TextView
                         android:id="@+id/weatherRange"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
                         android:maxLines="1"
-                        android:textColor="@color/text"
-                        android:textSize="15sp"
+                        android:textColor="@color/text_dim"
+                        android:textSize="14sp"
                         android:visibility="gone" />
 
                     <TextView
@@ -104,232 +98,187 @@
                         style="@style/Dim"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textSize="15sp" />
+                        android:textSize="13sp"
+                        android:visibility="gone" />
                 </LinearLayout>
             </LinearLayout>
-        </LinearLayout>
 
-        <!-- Velocímetro GPS con el auto -->
-        <LinearLayout
-            style="@style/Card"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginStart="12dp"
-            android:layout_weight="1.05"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <FrameLayout
-                android:id="@+id/carBox"
-                android:layout_width="78dp"
-                android:layout_height="182dp"
-                android:background="@drawable/bg_plain">
-
-                <ImageView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:src="@drawable/car_base" />
-
-                <ImageView
-                    android:id="@+id/carLights"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:alpha="0"
-                    android:src="@drawable/car_lights" />
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
+            <cl.rodrigo.autolauncher.SquareFrame
+                android:id="@+id/musicInfo"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="10dp"
                 android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
+                android:background="@drawable/bg_art"
+                android:foreground="@drawable/bg_plain">
 
-                <TextView
-                    android:id="@+id/speed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-condensed"
-                    android:includeFontPadding="false"
-                    android:text="0"
-                    android:textColor="@color/text"
-                    android:textSize="104sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="km/h"
-                    android:textColor="@color/accent"
-                    android:textSize="20sp" />
-
-                <TextView
-                    android:id="@+id/heading"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:text="--"
-                    android:textColor="@color/text"
-                    android:textSize="24sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/gpsStatus"
-                    style="@style/Dim"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Buscando GPS"
-                    android:textSize="14sp" />
-            </LinearLayout>
+                <ImageView
+                    android:id="@+id/musicArt"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="40dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_music"
+                    android:tint="@color/text_dim" />
+            </cl.rodrigo.autolauncher.SquareFrame>
         </LinearLayout>
 
-        <!-- Música -->
-        <LinearLayout
-            style="@style/Card"
+        <!-- Centro: velocímetro -->
+        <cl.rodrigo.autolauncher.SpeedGauge
+            android:id="@+id/gauge"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1.45" />
+
+        <!-- Derecha: accesos y Apps en la esquina -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:orientation="vertical">
 
             <LinearLayout
-                android:id="@+id/musicInfo"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_plain"
-                android:gravity="center_vertical"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/musicSource"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/ic_music"
-                    android:drawablePadding="6dp"
-                    android:drawableTint="@color/accent"
-                    android:gravity="center_vertical"
-                    android:maxLines="1"
-                    android:text="Música"
-                    android:textColor="@color/accent"
-                    android:textSize="15sp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:id="@+id/musicArt"
-                        android:layout_width="96dp"
-                        android:layout_height="96dp"
-                        android:background="@drawable/bg_button"
-                        android:padding="26dp"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/ic_music"
-                        android:tint="@color/text_dim" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/musicTitle"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:ellipsize="end"
-                            android:maxLines="2"
-                            android:text="Sin reproducción"
-                            android:textColor="@color/text"
-                            android:textSize="21sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/musicArtist"
-                            style="@style/Dim"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:textSize="17sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <ProgressBar
-                    android:id="@+id/musicProgress"
-                    style="@android:style/Widget.Material.ProgressBar.Horizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="6dp"
-                    android:layout_marginTop="16dp"
-                    android:max="1000"
-                    android:progressBackgroundTint="@color/card_stroke"
-                    android:progressTint="@color/accent" />
-
-                <LinearLayout
-                    android:id="@+id/musicTimes"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/musicElapsed"
-                        style="@style/Dim"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="0:00"
-                        android:textSize="14sp" />
-
-                    <TextView
-                        android:id="@+id/musicTotal"
-                        style="@style/Dim"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0:00"
-                        android:textSize="14sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="end"
                 android:orientation="horizontal">
 
                 <ImageButton
-                    android:id="@+id/btnPrev"
-                    style="@style/MediaBtn"
-                    android:contentDescription="Anterior"
-                    android:src="@drawable/ic_prev" />
-
-                <ImageButton
-                    android:id="@+id/btnPlay"
-                    style="@style/MediaBtn"
-                    android:layout_marginStart="10dp"
-                    android:layout_marginEnd="10dp"
-                    android:background="@drawable/bg_play"
-                    android:contentDescription="Reproducir"
-                    android:src="@drawable/ic_play"
-                    android:tint="@color/bg" />
-
-                <ImageButton
-                    android:id="@+id/btnNext"
-                    style="@style/MediaBtn"
-                    android:contentDescription="Siguiente"
-                    android:src="@drawable/ic_next" />
+                    android:id="@+id/btnApps"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/bg_round"
+                    android:contentDescription="Apps"
+                    android:padding="12dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_apps"
+                    android:tint="@color/text" />
             </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/dock"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="vertical" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Barra de accesos -->
+    <!-- Abajo: música -->
     <LinearLayout
-        android:id="@+id/dock"
         android:layout_width="match_parent"
-        android:layout_height="104dp"
-        android:layout_marginTop="12dp"
-        android:orientation="horizontal" />
+        android:layout_height="92dp"
+        android:background="@drawable/bg_bottom"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <LinearLayout
+            android:id="@+id/musicText"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/musicSource"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawableStart="@drawable/ic_music"
+                android:drawablePadding="4dp"
+                android:drawableTint="@color/accent"
+                android:gravity="center_vertical"
+                android:maxLines="1"
+                android:text="Música"
+                android:textColor="@color/accent"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/musicTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="marquee"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:singleLine="true"
+                android:text="Sin reproducción"
+                android:textColor="@color/text"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/musicArtist"
+                style="@style/Dim"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/musicElapsed"
+            style="@style/Dim"
+            android:layout_width="52dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:gravity="end"
+            android:textSize="15sp" />
+
+        <ProgressBar
+            android:id="@+id/musicProgress"
+            style="@android:style/Widget.Material.ProgressBar.Horizontal"
+            android:layout_width="0dp"
+            android:layout_height="6dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_weight="0.7"
+            android:max="1000"
+            android:progressBackgroundTint="@color/card_stroke"
+            android:progressTint="@color/accent" />
+
+        <TextView
+            android:id="@+id/musicTotal"
+            style="@style/Dim"
+            android:layout_width="52dp"
+            android:layout_height="wrap_content"
+            android:textSize="15sp" />
+
+        <ImageButton
+            android:id="@+id/btnPrev"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/bg_round"
+            android:contentDescription="Anterior"
+            android:padding="16dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_prev"
+            android:tint="@color/text" />
+
+        <ImageButton
+            android:id="@+id/btnPlay"
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/bg_circle"
+            android:contentDescription="Reproducir"
+            android:padding="18dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_play"
+            android:tint="@color/text" />
+
+        <ImageButton
+            android:id="@+id/btnNext"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:background="@drawable/bg_round"
+            android:contentDescription="Siguiente"
+            android:padding="16dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_next"
+            android:tint="@color/text" />
+    </LinearLayout>
 </LinearLayout>

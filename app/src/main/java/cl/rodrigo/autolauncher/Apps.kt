@@ -49,8 +49,8 @@ object Apps {
             .sortedBy { it.label.lowercase() }
     }
 
-    const val MAX_DOCK = 7
-    private val defaultDock = listOf("maps", "carlink", "radio", "phone", "settings")
+    const val MAX_DOCK = 6
+    private val defaultDock = listOf("maps", "phone", "settings", "carlink", "radio")
 
     fun dockKeys(ctx: Context): MutableList<String> {
         val raw = prefs(ctx).getString("dock", null) ?: return defaultDock.toMutableList()

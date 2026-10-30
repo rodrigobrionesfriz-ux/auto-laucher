@@ -28,16 +28,12 @@ class MainActivity : Activity() {
 
     private val handler = Handler(Looper.getMainLooper())
 
-    private lateinit var speedText: TextView
-    private lateinit var headingText: TextView
-    private lateinit var gpsText: TextView
+    private lateinit var gauge: SpeedGauge
     private lateinit var weatherTemp: TextView
     private lateinit var weatherDesc: TextView
     private lateinit var weatherPlace: TextView
     private lateinit var weatherIcon: ImageView
     private lateinit var weatherRange: TextView
-    private lateinit var carLights: ImageView
-    private var lightsShown = false
     private lateinit var musicSource: TextView
     private lateinit var musicTitle: TextView
     private lateinit var musicArtist: TextView
@@ -79,16 +75,14 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        speedText = findViewById(R.id.speed)
-        headingText = findViewById(R.id.heading)
-        gpsText = findViewById(R.id.gpsStatus)
+        gauge = findViewById(R.id.gauge)
+        gauge.limit = Prefs.speedLimit(this)
+        gauge.setOnLongClickListener { lightsMenu(); true }
         weatherTemp = findViewById(R.id.weatherTemp)
         weatherDesc = findViewById(R.id.weatherDesc)
         weatherPlace = findViewById(R.id.weatherPlace)
         weatherIcon = findViewById(R.id.weatherIcon)
         weatherRange = findViewById(R.id.weatherRange)
-        carLights = findViewById(R.id.carLights)
-        findViewById<View>(R.id.carBox).setOnLongClickListener { lightsMenu(); true }
         musicSource = findViewById(R.id.musicSource)
         musicTitle = findViewById(R.id.musicTitle)
         musicArtist = findViewById(R.id.musicArtist)
@@ -121,7 +115,7 @@ class MainActivity : Activity() {
             Music.key(this, KeyEvent.KEYCODE_MEDIA_NEXT); refreshMusicSoon()
         }
 
-        val musicInfo = findViewById<LinearLayout>(R.id.musicInfo)
+        val musicInfo = findViewById<View>(R.id.musicInfo)
         musicInfo.setOnClickListener {
             when {
                 !Music.hasAccess(this) -> {
@@ -135,6 +129,9 @@ class MainActivity : Activity() {
                 else -> Apps.open(this, Apps.musicSlot) {}
             }
         }
+        findViewById<View>(R.id.musicText).setOnClickListener { musicInfo.performClick() }
+        findViewById<View>(R.id.musicText).setOnLongClickListener { musicInfo.performLongClick() }
+        musicTitle.isSelected = true
         musicInfo.setOnLongClickListener {
             android.app.AlertDialog.Builder(this)
                 .setItems(arrayOf("Abrir app de música", "Cambiar app de música")) { _, which ->
@@ -180,45 +177,51 @@ class MainActivity : Activity() {
         val dock = findViewById<LinearLayout>(R.id.dock)
         dock.removeAllViews()
         val inflater = LayoutInflater.from(this)
-        val margin = (10 * resources.displayMetrics.density).toInt()
         val keys = Apps.dockKeys(this)
 
-        fun addTile(label: String, first: Boolean, setIcon: (ImageView) -> Unit): LinearLayout {
-            val tile = inflater.inflate(R.layout.item_tile, dock, false) as LinearLayout
-            setIcon(tile.findViewById(R.id.tileIcon))
-            tile.findViewById<TextView>(R.id.tileLabel).text = label
-            if (!first) (tile.layoutParams as LinearLayout.LayoutParams).marginStart = margin
-            dock.addView(tile)
-            return tile
+        fun addRow(label: String, setIcon: (ImageView) -> Unit): View {
+            val row = inflater.inflate(R.layout.item_row, dock, false)
+            setIcon(row.findViewById(R.id.tileIcon))
+            row.findViewById<TextView>(R.id.tileLabel).text = label
+            dock.addView(row)
+            return row.findViewById(R.id.rowBody)
         }
 
-        keys.forEachIndexed { i, key ->
+        fun appIcon(pkg: String?, iv: ImageView): Boolean {
+            if (pkg == null || pkg == Apps.SETTINGS) return false
+            return try {
+                iv.setImageDrawable(packageManager.getApplicationIcon(pkg))
+                iv.imageTintList = null
+                true
+            } catch (e: Exception) { false }
+        }
+
+        for (key in keys) {
             val slot = Apps.slotFor(key)
-            val tile: LinearLayout
+            val body: View
             if (slot != null) {
-                tile = addTile(slot.label, i == 0) { it.setImageResource(slot.icon) }
-                tile.setOnClickListener { Apps.open(this, slot) {} }
+                body = addRow(slot.label) { iv ->
+                    if (!appIcon(Apps.assigned(this, slot), iv)) iv.setImageResource(slot.icon)
+                }
+                body.setOnClickListener { Apps.open(this, slot) { buildDock() } }
             } else if (key.startsWith("pkg:")) {
                 val pkg = key.removePrefix("pkg:")
                 val label = try {
                     packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
                 } catch (e: Exception) { pkg }
-                tile = addTile(label, i == 0) {
-                    it.imageTintList = null
-                    try { it.setImageDrawable(packageManager.getApplicationIcon(pkg)) } catch (e: Exception) {}
-                }
-                tile.setOnClickListener {
+                body = addRow(label) { appIcon(pkg, it) }
+                body.setOnClickListener {
                     if (!Apps.launch(this, pkg)) Toast.makeText(this, "No se pudo abrir $label", Toast.LENGTH_SHORT).show()
                 }
-            } else return@forEachIndexed
-            tile.setOnLongClickListener { tileMenu(key, slot); true }
+            } else continue
+            body.setOnLongClickListener { tileMenu(key, slot); true }
         }
 
-        val appsTile = addTile("Apps", keys.isEmpty()) { it.setImageResource(R.drawable.ic_apps) }
-        appsTile.setOnClickListener { startActivity(Intent(this, AppsActivity::class.java)) }
-        appsTile.setOnLongClickListener {
+        val apps = findViewById<View>(R.id.btnApps)
+        apps.setOnClickListener { startActivity(Intent(this, AppsActivity::class.java)) }
+        apps.setOnLongClickListener {
             AlertDialog.Builder(this)
-                .setItems(arrayOf("Agregar acceso a la barra", "Restaurar barra original")) { _, which ->
+                .setItems(arrayOf("Agregar acceso", "Restaurar accesos originales")) { _, which ->
                     if (which == 0) addToDock()
                     else { Apps.resetDock(this); buildDock() }
                 }.show()
@@ -231,15 +234,17 @@ class MainActivity : Activity() {
         val idx = keys.indexOf(key)
         val options = ArrayList<Pair<String, () -> Unit>>()
         if (slot != null) options.add("Cambiar app" to {
-            Apps.pick(this, slot) { Toast.makeText(this, "${slot.label} actualizado", Toast.LENGTH_SHORT).show() }
+            Apps.pick(this, slot) {
+                Toast.makeText(this, "${slot.label} actualizado", Toast.LENGTH_SHORT).show(); buildDock()
+            }
         })
-        if (idx > 0) options.add("Mover a la izquierda" to {
+        if (idx > 0) options.add("Subir" to {
             keys.add(idx - 1, keys.removeAt(idx)); Apps.saveDock(this, keys); buildDock()
         })
-        if (idx in 0 until keys.size - 1) options.add("Mover a la derecha" to {
+        if (idx in 0 until keys.size - 1) options.add("Bajar" to {
             keys.add(idx + 1, keys.removeAt(idx)); Apps.saveDock(this, keys); buildDock()
         })
-        options.add("Quitar de la barra" to {
+        options.add("Quitar" to {
             keys.removeAt(idx); Apps.saveDock(this, keys); buildDock()
         })
         AlertDialog.Builder(this)
@@ -250,12 +255,12 @@ class MainActivity : Activity() {
     private fun addToDock() {
         val keys = Apps.dockKeys(this)
         if (keys.size >= Apps.MAX_DOCK) {
-            Toast.makeText(this, "La barra ya está llena; quita un acceso primero", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "La lista ya está llena; quita un acceso primero", Toast.LENGTH_LONG).show()
             return
         }
         val list = Apps.load(this)
         AlertDialog.Builder(this)
-            .setTitle("Agregar a la barra")
+            .setTitle("Agregar acceso")
             .setAdapter(AppAdapter(this, list, R.layout.item_pick)) { _, which ->
                 val k = "pkg:" + list[which].pkg
                 if (k !in keys) { keys.add(k); Apps.saveDock(this, keys); buildDock() }
@@ -291,6 +296,7 @@ class MainActivity : Activity() {
                     AlertDialog.Builder(this)
                         .setItems(limits.map { "$it km/h" }.toTypedArray()) { _, w ->
                             Prefs.setSpeedLimit(this, limits[w])
+                            gauge.limit = limits[w]
                         }.show()
                 }
                 2 -> lightsMenu()
@@ -436,14 +442,8 @@ class MainActivity : Activity() {
         lastFixAt = System.currentTimeMillis()
         lastLocation = loc
         val kmh = if (loc.hasSpeed()) (loc.speed * 3.6f).roundToInt() else 0
-        speedText.text = if (kmh < 2) "0" else kmh.toString()
-        val limit = Prefs.speedLimit(this)
-        speedText.setTextColor(getColor(when {
-            kmh > limit -> R.color.danger
-            kmh >= limit - 10 -> R.color.warn
-            else -> R.color.text
-        }))
-        if (loc.hasBearing() && kmh >= 3) headingText.text = cardinal(loc.bearing)
+        gauge.setSpeed(if (kmh < 2) 0 else kmh)
+        if (loc.hasBearing() && kmh >= 3) gauge.heading = cardinal(loc.bearing)
     }
 
     private fun cardinal(deg: Float): String {
@@ -457,11 +457,10 @@ class MainActivity : Activity() {
         val now = System.currentTimeMillis()
         val fixAge = now - lastFixAt
 
-        gpsText.text = when {
+        gauge.status = when {
             !hasLocationPermission() -> "Sin permiso de ubicación"
             lastFixAt == 0L || fixAge > 5000 -> {
-                speedText.text = "0"
-                speedText.setTextColor(getColor(R.color.text))
+                gauge.setSpeed(0)
                 if (satsSeen > 0) "Buscando GPS · $satsSeen sat" else "Buscando GPS"
             }
             else -> "GPS · $satsUsed sat"
@@ -469,10 +468,7 @@ class MainActivity : Activity() {
 
         updateWeatherIfNeeded(now)
         applyNight()
-        if (Syu.lightsOn != lightsShown) {
-            lightsShown = Syu.lightsOn
-            carLights.animate().alpha(if (lightsShown) 1f else 0f).setDuration(400).start()
-        }
+        gauge.setLights(Syu.lightsOn)
         refreshMusic()
     }
 
@@ -494,7 +490,7 @@ class MainActivity : Activity() {
                 if (info != null) {
                     weatherAt = System.currentTimeMillis()
                     weatherTemp.text = "${info.temp}°"
-                    weatherDesc.text = info.desc
+                    weatherDesc.text = if (info.place != null) "${info.desc} · ${info.place}" else info.desc
                     weatherPlace.text = info.place ?: ""
                     weatherIcon.setImageResource(info.icon)
                     weatherIcon.visibility = View.VISIBLE
@@ -544,7 +540,7 @@ class MainActivity : Activity() {
     private fun showArt(bmp: android.graphics.Bitmap?) {
         if (bmp === artShown && (bmp != null || musicArt.drawable != null)) return
         artShown = bmp
-        val pad = if (bmp == null) (26 * resources.displayMetrics.density).toInt() else 0
+        val pad = if (bmp == null) (40 * resources.displayMetrics.density).toInt() else 0
         musicArt.setPadding(pad, pad, pad, pad)
         if (bmp == null) {
             musicArt.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_dim))
