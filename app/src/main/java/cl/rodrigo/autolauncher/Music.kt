@@ -22,7 +22,19 @@ import java.net.URL
 import java.net.URLEncoder
 
 /** Servicio vacío: solo existe para que Android nos deje leer qué canción suena. */
-class MediaListener : NotificationListenerService()
+class MediaListener : NotificationListenerService() {
+    override fun onNotificationPosted(sbn: android.service.notification.StatusBarNotification) {
+        try {
+            val ex = sbn.notification.extras
+            val title = ex.getCharSequence("android.title")?.toString()
+            val text = ex.getCharSequence("android.text")?.toString()
+            val sub = ex.getCharSequence("android.subText")?.toString()
+            Diag.add("NOTIF ${sbn.packageName} | título=$title | texto=$text | sub=$sub")
+            Music.fromNotification(sbn.packageName, sbn.notification, title, text)
+        } catch (e: Exception) {
+        }
+    }
+}
 
 data class NowPlaying(
     val title: String?,
@@ -82,18 +94,73 @@ object Music {
             bAt = now
             return
         }
-        // Formato común de reproductores (com.android.music.metachanged y similares)
-        val ex = intent.extras ?: return
-        val title = ex.getString("track") ?: ex.getString("title") ?: return
+        // Cualquier otro mensaje: buscar campos que parezcan canción/artista
+        val ex = intent.extras
+        Diag.add("BCAST ${intent.action} | " + dump(ex))
+        if (ex == null) return
+        var title: String? = null
+        var artist: String? = null
+        var album: String? = null
+        var dur = -1L
+        var pos = -1L
+        var playing: Boolean? = null
+        for (k in ex.keySet()) {
+            val key = k.lowercase()
+            @Suppress("DEPRECATION")
+            val v = ex.get(k)
+            when {
+                v is String && v.isNotBlank() && title == null &&
+                    (key.contains("title") || key.contains("song") || key == "track" ||
+                        key.contains("trackname") || key == "name" || key.contains("music_name")) -> title = v
+                v is String && v.isNotBlank() && artist == null &&
+                    (key.contains("artist") || key.contains("singer")) -> artist = v
+                v is String && v.isNotBlank() && album == null && key.contains("album") -> album = v
+                (key.contains("duration") || key.contains("total") || key.contains("length")) &&
+                    readLong(v) > 0 -> dur = readLong(v)
+                (key.contains("position") || key.contains("current") || key.contains("progress") ||
+                    key.contains("elapsed")) && readLong(v) >= 0 -> pos = readLong(v)
+                v is Boolean && key.contains("play") -> playing = v
+            }
+        }
+        if (title == null) {
+            if (playing != null) { bPlaying = playing; bAt = now }
+            return
+        }
         bTitle = title
-        bArtist = ex.getString("artist")
-        bAlbum = ex.getString("album")
-        if (ex.containsKey("playing")) bPlaying = ex.getBoolean("playing")
-        bDuration = readLong(ex.get("duration"))
-        bPosition = readLong(ex.get("position"))
+        bArtist = artist
+        bAlbum = album
+        playing?.let { bPlaying = it }
+        if (title != null && playing == null) bPlaying = true
+        // Algunas radios mandan segundos en vez de milisegundos
+        bDuration = if (dur in 1..36_000) dur * 1000 else dur
+        bPosition = if (pos in 0..36_000 && bDuration > 0 && dur in 1..36_000) pos * 1000 else pos
         bPositionAt = now
         bSource = sourceFromAction(intent.action)
         bAt = now
+    }
+
+    /** Usa notificaciones con estilo multimedia como fuente de la canción. */
+    fun fromNotification(pkg: String, n: android.app.Notification, title: String?, text: String?) {
+        if (title.isNullOrBlank()) return
+        val isMedia = n.extras.containsKey("android.mediaSession") ||
+            n.category == android.app.Notification.CATEGORY_TRANSPORT
+        if (!isMedia) return
+        bTitle = title
+        bArtist = text
+        bAlbum = null
+        bPlaying = true
+        bDuration = -1
+        bPosition = -1
+        bSource = if (pkg.contains("bt", true) || pkg.contains("bluetooth", true)) "Bluetooth" else pkg
+        bAt = SystemClock.elapsedRealtime()
+    }
+
+    fun dump(b: android.os.Bundle?): String {
+        if (b == null) return "(sin datos)"
+        return b.keySet().joinToString(", ") { k ->
+            @Suppress("DEPRECATION")
+            "$k=${b.get(k)}"
+        }
     }
 
     private fun readLong(v: Any?): Long = when (v) {
@@ -123,11 +190,17 @@ object Music {
             addAction("com.htc.music.metachanged")
             addAction("com.sec.android.app.music.metachanged")
             addAction("com.miui.player.metachanged")
+            Discovery.cached(ctx).forEach { addAction(it) }
         }
         try {
             ctx.registerReceiver(receiver, f)
         } catch (e: Exception) {
         }
+    }
+
+    fun reRegister(ctx: Context) {
+        unregister(ctx)
+        register(ctx)
     }
 
     fun unregister(ctx: Context) {
@@ -165,6 +238,27 @@ object Music {
         }
     }
 
+    /** Texto con todas las sesiones multimedia y sus datos, para diagnóstico. */
+    fun sessionsReport(ctx: Context): String {
+        if (!hasAccess(ctx)) return "Sin acceso a notificaciones"
+        return try {
+            val msm = ctx.getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager
+            val list = msm.getActiveSessions(ComponentName(ctx, MediaListener::class.java))
+            if (list.isEmpty()) "No hay sesiones activas"
+            else list.joinToString("\n\n") { c ->
+                val m = c.metadata
+                val keys = m?.keySet()?.joinToString("\n   ") { k ->
+                    val v = try { m.getString(k) } catch (e: Exception) { null }
+                        ?: try { m.getLong(k).toString() } catch (e: Exception) { "?" }
+                    "$k = $v"
+                } ?: "(sin metadatos)"
+                "• ${c.packageName}  estado=${c.playbackState?.state} pos=${c.playbackState?.position}\n   $keys"
+            }
+        } catch (e: Exception) {
+            "Error: ${e.message}"
+        }
+    }
+
     private fun appLabel(ctx: Context, pkg: String): String {
         if (pkg == "com.android.bluetooth" || pkg.contains("bt", true) || pkg.contains("bluetooth", true)) {
             return "Bluetooth"
@@ -188,6 +282,7 @@ object Music {
         val c = controller(ctx)
         val meta = c?.metadata
         val title = meta?.getString(MediaMetadata.METADATA_KEY_TITLE)
+            ?: meta?.getString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE)
         if (c != null && meta != null && !title.isNullOrBlank()) {
             val state = c.playbackState
             val duration = meta.getLong(MediaMetadata.METADATA_KEY_DURATION).takeIf { it > 0 } ?: -1L
@@ -199,7 +294,8 @@ object Music {
             return NowPlaying(
                 title = title,
                 artist = meta.getString(MediaMetadata.METADATA_KEY_ARTIST)
-                    ?: meta.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST),
+                    ?: meta.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST)
+                    ?: meta.getString(MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE),
                 album = meta.getString(MediaMetadata.METADATA_KEY_ALBUM),
                 source = if (label == "Bluetooth" && !extraSource.isNullOrBlank()) "Bluetooth · $extraSource" else label,
                 playing = state?.state == PlaybackState.STATE_PLAYING,

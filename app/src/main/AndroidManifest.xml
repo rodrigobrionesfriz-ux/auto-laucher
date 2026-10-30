@@ -39,6 +39,11 @@
             android:exported="false"
             android:screenOrientation="landscape" />
 
+        <activity
+            android:name=".DiagActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+
         <service
             android:name=".MediaListener"
             android:exported="true"

@@ -88,6 +88,15 @@ class MainActivity : Activity() {
         musicElapsed = findViewById(R.id.musicElapsed)
         musicTotal = findViewById(R.id.musicTotal)
         Music.register(this)
+        if (Discovery.needsScan(this)) {
+            Thread {
+                Discovery.scan(applicationContext)
+                runOnUiThread { Music.reRegister(this) }
+            }.start()
+        }
+        findViewById<TextView>(R.id.clock).setOnLongClickListener {
+            startActivity(Intent(this, DiagActivity::class.java)); true
+        }
 
         lm = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
