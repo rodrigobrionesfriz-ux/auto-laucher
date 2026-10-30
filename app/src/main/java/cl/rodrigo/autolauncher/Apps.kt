@@ -49,6 +49,22 @@ object Apps {
             .sortedBy { it.label.lowercase() }
     }
 
+    const val MAX_DOCK = 7
+    private val defaultDock = listOf("maps", "carlink", "radio", "phone", "settings")
+
+    fun dockKeys(ctx: Context): MutableList<String> {
+        val raw = prefs(ctx).getString("dock", null) ?: return defaultDock.toMutableList()
+        return raw.split(",").filter { it.isNotBlank() }.toMutableList()
+    }
+
+    fun saveDock(ctx: Context, keys: List<String>) {
+        prefs(ctx).edit().putString("dock", keys.joinToString(",")).apply()
+    }
+
+    fun resetDock(ctx: Context) = prefs(ctx).edit().remove("dock").apply()
+
+    fun slotFor(key: String): Slot? = slots.firstOrNull { it.key == key }
+
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     fun assigned(ctx: Context, slot: Slot): String? {

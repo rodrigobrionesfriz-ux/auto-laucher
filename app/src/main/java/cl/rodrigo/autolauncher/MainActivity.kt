@@ -2,6 +2,7 @@ package cl.rodrigo.autolauncher
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -15,6 +16,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -95,9 +97,7 @@ class MainActivity : Activity() {
                 runOnUiThread { Music.reRegister(this) }
             }.start()
         }
-        findViewById<TextView>(R.id.clock).setOnLongClickListener {
-            startActivity(Intent(this, DiagActivity::class.java)); true
-        }
+        findViewById<TextView>(R.id.clock).setOnLongClickListener { settingsMenu(); true }
 
         lm = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
@@ -173,29 +173,155 @@ class MainActivity : Activity() {
         dock.removeAllViews()
         val inflater = LayoutInflater.from(this)
         val margin = (10 * resources.displayMetrics.density).toInt()
+        val keys = Apps.dockKeys(this)
 
-        fun addTile(label: String, icon: Int, first: Boolean): LinearLayout {
+        fun addTile(label: String, first: Boolean, setIcon: (ImageView) -> Unit): LinearLayout {
             val tile = inflater.inflate(R.layout.item_tile, dock, false) as LinearLayout
-            tile.findViewById<ImageView>(R.id.tileIcon).setImageResource(icon)
+            setIcon(tile.findViewById(R.id.tileIcon))
             tile.findViewById<TextView>(R.id.tileLabel).text = label
             if (!first) (tile.layoutParams as LinearLayout.LayoutParams).marginStart = margin
             dock.addView(tile)
             return tile
         }
 
-        Apps.slots.forEachIndexed { i, slot ->
-            val tile = addTile(slot.label, slot.icon, i == 0)
-            tile.setOnClickListener { Apps.open(this, slot) {} }
-            tile.setOnLongClickListener {
-                Apps.pick(this, slot) {
-                    Toast.makeText(this, "${slot.label} actualizado", Toast.LENGTH_SHORT).show()
+        keys.forEachIndexed { i, key ->
+            val slot = Apps.slotFor(key)
+            val tile: LinearLayout
+            if (slot != null) {
+                tile = addTile(slot.label, i == 0) { it.setImageResource(slot.icon) }
+                tile.setOnClickListener { Apps.open(this, slot) {} }
+            } else if (key.startsWith("pkg:")) {
+                val pkg = key.removePrefix("pkg:")
+                val label = try {
+                    packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
+                } catch (e: Exception) { pkg }
+                tile = addTile(label, i == 0) {
+                    it.imageTintList = null
+                    try { it.setImageDrawable(packageManager.getApplicationIcon(pkg)) } catch (e: Exception) {}
                 }
-                true
+                tile.setOnClickListener {
+                    if (!Apps.launch(this, pkg)) Toast.makeText(this, "No se pudo abrir $label", Toast.LENGTH_SHORT).show()
+                }
+            } else return@forEachIndexed
+            tile.setOnLongClickListener { tileMenu(key, slot); true }
+        }
+
+        val appsTile = addTile("Apps", keys.isEmpty()) { it.setImageResource(R.drawable.ic_apps) }
+        appsTile.setOnClickListener { startActivity(Intent(this, AppsActivity::class.java)) }
+        appsTile.setOnLongClickListener {
+            AlertDialog.Builder(this)
+                .setItems(arrayOf("Agregar acceso a la barra", "Restaurar barra original")) { _, which ->
+                    if (which == 0) addToDock()
+                    else { Apps.resetDock(this); buildDock() }
+                }.show()
+            true
+        }
+    }
+
+    private fun tileMenu(key: String, slot: Slot?) {
+        val keys = Apps.dockKeys(this)
+        val idx = keys.indexOf(key)
+        val options = ArrayList<Pair<String, () -> Unit>>()
+        if (slot != null) options.add("Cambiar app" to {
+            Apps.pick(this, slot) { Toast.makeText(this, "${slot.label} actualizado", Toast.LENGTH_SHORT).show() }
+        })
+        if (idx > 0) options.add("Mover a la izquierda" to {
+            keys.add(idx - 1, keys.removeAt(idx)); Apps.saveDock(this, keys); buildDock()
+        })
+        if (idx in 0 until keys.size - 1) options.add("Mover a la derecha" to {
+            keys.add(idx + 1, keys.removeAt(idx)); Apps.saveDock(this, keys); buildDock()
+        })
+        options.add("Quitar de la barra" to {
+            keys.removeAt(idx); Apps.saveDock(this, keys); buildDock()
+        })
+        AlertDialog.Builder(this)
+            .setItems(options.map { it.first }.toTypedArray()) { _, which -> options[which].second() }
+            .show()
+    }
+
+    private fun addToDock() {
+        val keys = Apps.dockKeys(this)
+        if (keys.size >= Apps.MAX_DOCK) {
+            Toast.makeText(this, "La barra ya está llena; quita un acceso primero", Toast.LENGTH_LONG).show()
+            return
+        }
+        val list = Apps.load(this)
+        AlertDialog.Builder(this)
+            .setTitle("Agregar a la barra")
+            .setAdapter(AppAdapter(this, list, R.layout.item_pick)) { _, which ->
+                val k = "pkg:" + list[which].pkg
+                if (k !in keys) { keys.add(k); Apps.saveDock(this, keys); buildDock() }
             }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    // ---------- Menú de ajustes (mantener presionado el reloj) ----------
+
+    private fun settingsMenu() {
+        val modeName = when (Prefs.nightMode(this)) {
+            Prefs.NIGHT_DAY -> "Siempre día"
+            Prefs.NIGHT_ON -> "Siempre noche"
+            else -> "Automático"
         }
-        addTile("Apps", R.drawable.ic_apps, false).setOnClickListener {
-            startActivity(Intent(this, AppsActivity::class.java))
+        val items = arrayOf(
+            "Modo noche: $modeName",
+            "Aviso de velocidad: ${Prefs.speedLimit(this)} km/h",
+            "Diagnóstico",
+        )
+        AlertDialog.Builder(this).setItems(items) { _, which ->
+            when (which) {
+                0 -> AlertDialog.Builder(this)
+                    .setItems(arrayOf("Automático (según el sol)", "Siempre día", "Siempre noche")) { _, w ->
+                        Prefs.setNightMode(this, listOf(Prefs.NIGHT_AUTO, Prefs.NIGHT_DAY, Prefs.NIGHT_ON)[w])
+                        nightCheckedAt = 0
+                        applyNight(force = true)
+                    }.show()
+                1 -> {
+                    val limits = listOf(50, 60, 80, 100, 110, 120)
+                    AlertDialog.Builder(this)
+                        .setItems(limits.map { "$it km/h" }.toTypedArray()) { _, w ->
+                            Prefs.setSpeedLimit(this, limits[w])
+                        }.show()
+                }
+                2 -> startActivity(Intent(this, DiagActivity::class.java))
+            }
+        }.show()
+    }
+
+    // ---------- Modo noche ----------
+
+    private var nightOverlay: View? = null
+    private var isNightNow: Boolean? = null
+    private var nightCheckedAt = 0L
+
+    private fun applyNight(force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && now - nightCheckedAt < 60_000L) return
+        nightCheckedAt = now
+        val night = when (Prefs.nightMode(this)) {
+            Prefs.NIGHT_DAY -> false
+            Prefs.NIGHT_ON -> true
+            else -> Sun.isNight(lastLocation?.latitude, lastLocation?.longitude)
         }
+        if (!force && night == isNightNow) return
+        isNightNow = night
+        if (nightOverlay == null) {
+            val content = findViewById<android.widget.FrameLayout>(android.R.id.content)
+            nightOverlay = View(this).apply {
+                setBackgroundColor(android.graphics.Color.BLACK)
+                isClickable = false
+                isFocusable = false
+            }
+            content.addView(nightOverlay, android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
+        }
+        nightOverlay?.alpha = if (night) 0.45f else 0f
+        val lp = window.attributes
+        lp.screenBrightness = if (night) 0.12f
+            else android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        window.attributes = lp
     }
 
     // ---------- GPS ----------
@@ -264,6 +390,12 @@ class MainActivity : Activity() {
         lastLocation = loc
         val kmh = if (loc.hasSpeed()) (loc.speed * 3.6f).roundToInt() else 0
         speedText.text = if (kmh < 2) "0" else kmh.toString()
+        val limit = Prefs.speedLimit(this)
+        speedText.setTextColor(getColor(when {
+            kmh > limit -> R.color.danger
+            kmh >= limit - 10 -> R.color.warn
+            else -> R.color.text
+        }))
         if (loc.hasBearing() && kmh >= 3) headingText.text = cardinal(loc.bearing)
     }
 
@@ -282,12 +414,14 @@ class MainActivity : Activity() {
             !hasLocationPermission() -> "Sin permiso de ubicación"
             lastFixAt == 0L || fixAge > 5000 -> {
                 speedText.text = "0"
+                speedText.setTextColor(getColor(R.color.text))
                 if (satsSeen > 0) "Buscando GPS · $satsSeen sat" else "Buscando GPS"
             }
             else -> "GPS · $satsUsed sat"
         }
 
         updateWeatherIfNeeded(now)
+        applyNight()
         refreshMusic()
     }
 
