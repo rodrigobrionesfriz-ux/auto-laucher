@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="90dp" android:height="210dp"
+    android:viewportWidth="120" android:viewportHeight="280">
+    <!-- ruedas -->
+    <path android:fillColor="#0B0E12" android:pathData="M15,96h10v32h-10zM95,96h10v32h-10zM15,214h10v32h-10zM95,214h10v32h-10z" />
+    <!-- espejos -->
+    <path android:fillColor="#3A4452" android:pathData="M21,140L11,137L11,147L21,150ZM99,140L109,137L109,147L99,150Z" />
+    <!-- carrocería -->
+    <path android:fillColor="#2E3642" android:strokeColor="#6B7889" android:strokeWidth="1.5"
+        android:pathData="M34,72H86Q100,72 100,86V254Q100,268 86,268H34Q20,268 20,254V86Q20,72 34,72Z" />
+    <!-- parrilla / parachoque -->
+    <path android:strokeColor="#9AA5B4" android:strokeWidth="2" android:strokeLineCap="round" android:pathData="M42,75H78" />
+    <!-- capó -->
+    <path android:strokeColor="#465163" android:strokeWidth="1.2" android:pathData="M44,86L47,132M76,86L73,132M30,134Q60,128 90,134" />
+    <!-- parabrisas -->
+    <path android:fillColor="#0E141B" android:strokeColor="#566173" android:strokeWidth="0.8"
+        android:pathData="M27,140Q60,131 93,140L88,162Q60,156 32,162Z" />
+    <!-- techo -->
+    <path android:fillColor="#38414E" android:pathData="M33,164H87V228H33Z" />
+    <!-- barras de techo -->
+    <path android:fillColor="#A3ADBA" android:pathData="M35,167h3v58h-3zM82,167h3v58h-3z" />
+    <path android:strokeColor="#4A5566" android:strokeWidth="1" android:pathData="M40,185H80M40,207H80" />
+    <!-- ventanas laterales -->
+    <path android:fillColor="#0E141B" android:pathData="M23,146L31,164V228L23,233ZM97,146L89,164V228L97,233Z" />
+    <!-- luneta -->
+    <path android:fillColor="#0E141B" android:strokeColor="#566173" android:strokeWidth="0.8"
+        android:pathData="M33,231H87L91,250Q60,255 29,250Z" />
+    <!-- focos apagados -->
+    <path android:fillColor="#5D6672" android:pathData="M23,82Q28,74 39,74L37,82Q29,83 23,87ZM97,82Q92,74 81,74L83,82Q91,83 97,87Z" />
+    <!-- luces traseras apagadas -->
+    <path android:fillColor="#4A2327" android:pathData="M21,249H30V263Q23,263 21,257ZM99,249H90V263Q97,263 99,257Z" />
+</vector>

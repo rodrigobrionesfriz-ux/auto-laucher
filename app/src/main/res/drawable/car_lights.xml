@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="90dp" android:height="210dp"
+    android:viewportWidth="120" android:viewportHeight="280">
+    <!-- haces de luz -->
+    <path android:fillColor="#FFF3C4" android:fillAlpha="0.16" android:pathData="M25,76L0,0H58L39,76Z" />
+    <path android:fillColor="#FFF3C4" android:fillAlpha="0.16" android:pathData="M95,76L120,0H62L81,76Z" />
+    <path android:fillColor="#FFF3C4" android:fillAlpha="0.18" android:pathData="M28,76L14,20H48L36,76Z" />
+    <path android:fillColor="#FFF3C4" android:fillAlpha="0.18" android:pathData="M92,76L106,20H72L84,76Z" />
+    <!-- focos encendidos -->
+    <path android:fillColor="#FFF8DE" android:pathData="M23,82Q28,74 39,74L37,82Q29,83 23,87ZM97,82Q92,74 81,74L83,82Q91,83 97,87Z" />
+    <!-- luces traseras encendidas -->
+    <path android:fillColor="#FF3B3B" android:fillAlpha="0.35" android:pathData="M30,244Q12,246 14,258Q16,272 30,270ZM90,244Q108,246 106,258Q104,272 90,270Z" />
+    <path android:fillColor="#FF4A4A" android:pathData="M21,249H30V263Q23,263 21,257ZM99,249H90V263Q97,263 99,257Z" />
+</vector>

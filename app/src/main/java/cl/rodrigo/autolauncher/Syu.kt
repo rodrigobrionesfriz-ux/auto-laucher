@@ -44,7 +44,43 @@ object Syu {
         }
     }
 
+    // ---------- Luces del vehículo ----------
+    private var appCtx: Context? = null
+    private val lastInt = HashMap<String, Int>()
+    @Volatile var lightsOn = false
+        private set
+    private var detecting = false
+    private val changes = HashMap<String, Int>()
+
+    fun lightsKey(): String? = appCtx?.getSharedPreferences("launcher", Context.MODE_PRIVATE)
+        ?.getString("lights_key", null)
+
+    fun clearLights() {
+        appCtx?.getSharedPreferences("launcher", Context.MODE_PRIVATE)?.edit()?.remove("lights_key")?.apply()
+        lightsOn = false
+    }
+
+    /** Empieza a observar qué valor cambia mientras el usuario enciende y apaga las luces. */
+    fun startDetect() = synchronized(this) {
+        changes.clear()
+        detecting = true
+    }
+
+    /** Termina la detección y guarda el código que cambió (encendido y apagado). */
+    fun finishDetect(): String? = synchronized(this) {
+        detecting = false
+        val best = changes.filter { it.value >= 2 }.maxByOrNull { it.value }?.key
+            ?: changes.maxByOrNull { it.value }?.key
+        if (best != null) {
+            appCtx?.getSharedPreferences("launcher", Context.MODE_PRIVATE)?.edit()
+                ?.putString("lights_key", best)?.apply()
+            lightsOn = (lastInt[best] ?: 0) != 0
+        }
+        best
+    }
+
     fun connect(ctx: Context) {
+        appCtx = ctx.applicationContext
         if (bound) return
         val candidates = listOf(
             Intent("com.syu.ms.toolkit").setPackage("com.syu.ms"),
@@ -67,12 +103,12 @@ object Syu {
     private fun subscribe(toolkit: IBinder) {
         var modules = 0
         var regs = 0
-        for (m in listOf(BT_MODULE)) {
+        for (m in 0..12) {
             val module = getModule(toolkit, m) ?: continue
             modules++
             val cb = Cb(m)
             callbacks.add(cb)
-            for (code in 0..60) {
+            for (code in 0..150) {
                 if (register(module, cb, code)) regs++
             }
         }
@@ -146,6 +182,15 @@ object Syu {
             }
         }
         val key = "m$module c$code"
+        val firstInt = ints?.takeIf { it.size == 1 }?.get(0)
+        if (firstInt != null) synchronized(this) {
+            val prev = lastInt.put(key, firstInt)
+            // Solo valores tipo interruptor (0/1 o 0/n) cuentan para detectar luces
+            if (detecting && prev != null && prev != firstInt && (prev == 0 || firstInt == 0)) {
+                changes[key] = (changes[key] ?: 0) + 1
+            }
+            if (key == lightsKey()) lightsOn = firstInt != 0
+        }
         val strText = strs?.filterNotNull()?.filter { it.isNotBlank() }.orEmpty()
         val line = "ints=${ints?.joinToString(",", "[", "]")} strs=${strText.joinToString(" | ", "[", "]")}"
         synchronized(this) {

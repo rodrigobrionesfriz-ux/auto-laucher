@@ -34,6 +34,10 @@ class MainActivity : Activity() {
     private lateinit var weatherTemp: TextView
     private lateinit var weatherDesc: TextView
     private lateinit var weatherPlace: TextView
+    private lateinit var weatherIcon: ImageView
+    private lateinit var weatherRange: TextView
+    private lateinit var carLights: ImageView
+    private var lightsShown = false
     private lateinit var musicSource: TextView
     private lateinit var musicTitle: TextView
     private lateinit var musicArtist: TextView
@@ -81,6 +85,10 @@ class MainActivity : Activity() {
         weatherTemp = findViewById(R.id.weatherTemp)
         weatherDesc = findViewById(R.id.weatherDesc)
         weatherPlace = findViewById(R.id.weatherPlace)
+        weatherIcon = findViewById(R.id.weatherIcon)
+        weatherRange = findViewById(R.id.weatherRange)
+        carLights = findViewById(R.id.carLights)
+        findViewById<View>(R.id.carBox).setOnLongClickListener { lightsMenu(); true }
         musicSource = findViewById(R.id.musicSource)
         musicTitle = findViewById(R.id.musicTitle)
         musicArtist = findViewById(R.id.musicArtist)
@@ -267,6 +275,7 @@ class MainActivity : Activity() {
         val items = arrayOf(
             "Modo noche: $modeName",
             "Aviso de velocidad: ${Prefs.speedLimit(this)} km/h",
+            "Luces del vehículo",
             "Diagnóstico",
         )
         AlertDialog.Builder(this).setItems(items) { _, which ->
@@ -284,9 +293,47 @@ class MainActivity : Activity() {
                             Prefs.setSpeedLimit(this, limits[w])
                         }.show()
                 }
-                2 -> startActivity(Intent(this, DiagActivity::class.java))
+                2 -> lightsMenu()
+                3 -> startActivity(Intent(this, DiagActivity::class.java))
             }
         }.show()
+    }
+
+    // ---------- Luces del vehículo ----------
+
+    private fun lightsMenu() {
+        val key = Syu.lightsKey()
+        val msg = if (key == null) "Todavía no sé qué señal indica las luces del auto. Para enseñarle " +
+            "a la radio, toca Detectar y luego enciende y apaga las luces del vehículo dos veces."
+        else "Luces vinculadas a la señal $key.\nEstado actual: ${if (Syu.lightsOn) "encendidas" else "apagadas"}."
+        val b = AlertDialog.Builder(this)
+            .setTitle("Luces del vehículo")
+            .setMessage(msg)
+            .setPositiveButton("Detectar") { _, _ -> detectLights() }
+            .setNegativeButton("Cerrar", null)
+        if (key != null) b.setNeutralButton("Olvidar") { _, _ -> Syu.clearLights() }
+        b.show()
+    }
+
+    private fun detectLights() {
+        Syu.startDetect()
+        val dlg = AlertDialog.Builder(this)
+            .setTitle("Detectando luces…")
+            .setMessage("Ahora enciende y apaga las luces del auto dos veces.\nTienes 20 segundos.")
+            .setCancelable(false)
+            .show()
+        handler.postDelayed({
+            dlg.dismiss()
+            val found = Syu.finishDetect()
+            AlertDialog.Builder(this)
+                .setTitle("Luces del vehículo")
+                .setMessage(if (found != null) "Listo, encontré la señal ($found). El auto en pantalla " +
+                    "encenderá sus luces junto con las tuyas."
+                    else "No detecté ningún cambio. Puede que el cable de iluminación (ILL) de la radio " +
+                    "no esté conectado. Intenta de nuevo o revisa la instalación.")
+                .setPositiveButton("OK", null)
+                .show()
+        }, 20_000)
     }
 
     // ---------- Modo noche ----------
@@ -422,6 +469,10 @@ class MainActivity : Activity() {
 
         updateWeatherIfNeeded(now)
         applyNight()
+        if (Syu.lightsOn != lightsShown) {
+            lightsShown = Syu.lightsOn
+            carLights.animate().alpha(if (lightsShown) 1f else 0f).setDuration(400).start()
+        }
         refreshMusic()
     }
 
@@ -445,6 +496,12 @@ class MainActivity : Activity() {
                     weatherTemp.text = "${info.temp}°"
                     weatherDesc.text = info.desc
                     weatherPlace.text = info.place ?: ""
+                    weatherIcon.setImageResource(info.icon)
+                    weatherIcon.visibility = View.VISIBLE
+                    if (info.max != null && info.min != null) {
+                        weatherRange.text = "↑ ${info.max}°   ↓ ${info.min}°"
+                        weatherRange.visibility = View.VISIBLE
+                    }
                 } else if (weatherAt == 0L) {
                     weatherDesc.text = "Sin conexión"
                 }
