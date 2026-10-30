@@ -278,6 +278,42 @@ object Music {
         return state.position + (delta * state.playbackSpeed).toLong()
     }
 
+    // ---------- Datos del servicio interno SYU (música Bluetooth) ----------
+    @Volatile var syuTitle: String? = null
+    @Volatile var syuArtist: String? = null
+    @Volatile var syuAlbum: String? = null
+    @Volatile var syuDevice: String? = null
+
+    private fun btSession(ctx: Context): MediaController? {
+        if (!hasAccess(ctx)) return null
+        return try {
+            val msm = ctx.getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager
+            msm.getActiveSessions(ComponentName(ctx, MediaListener::class.java))
+                .firstOrNull { it.packageName == "com.android.bluetooth" }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun fromSyu(ctx: Context): NowPlaying? {
+        val title = syuTitle?.takeIf { it.isNotBlank() } ?: return null
+        val bt = btSession(ctx)
+        // Sin sesión Bluetooth activa (teléfono desconectado) no mostramos datos viejos
+        if (bt == null && hasAccess(ctx)) return null
+        val state = bt?.playbackState
+        val device = syuDevice?.takeIf { it.isNotBlank() }
+        return NowPlaying(
+            title = title,
+            artist = syuArtist?.takeIf { it.isNotBlank() },
+            album = syuAlbum?.takeIf { it.isNotBlank() && it != title },
+            source = if (device != null) "Bluetooth · $device" else "Bluetooth",
+            playing = state == null || state.state == PlaybackState.STATE_PLAYING,
+            durationMs = -1,
+            positionMs = livePosition(state),
+            art = null,
+        )
+    }
+
     fun nowPlaying(ctx: Context): NowPlaying? {
         val c = controller(ctx)
         val meta = c?.metadata
@@ -304,6 +340,8 @@ object Music {
                 art = art,
             )
         }
+        // Música Bluetooth en radios FYT/SYU
+        fromSyu(ctx)?.let { return it }
         // Respaldo: lo recibido por broadcast en los últimos 10 minutos
         if (bTitle.isNullOrBlank() || SystemClock.elapsedRealtime() - bAt > 600_000L) {
             return if (c != null) NowPlaying(null, null, null, appLabel(ctx, c.packageName),
@@ -364,19 +402,29 @@ object AlbumArt {
         return null
     }
 
-    private fun fetch(artist: String?, title: String): Bitmap? = try {
-        val term = URLEncoder.encode(listOfNotNull(artist, title).joinToString(" "), "UTF-8")
-        val search = read(URL("https://itunes.apple.com/search?term=$term&entity=song&limit=1&country=CL"))
-        val results = JSONObject(String(search)).getJSONArray("results")
-        if (results.length() == 0) null
-        else {
-            val url = results.getJSONObject(0).getString("artworkUrl100")
-                .replace("100x100bb", "300x300bb")
-            val bytes = read(URL(url))
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    private fun fetch(artist: String?, title: String): Bitmap? {
+        val mainArtist = artist?.split(",", "&", " feat", " ft.")?.firstOrNull()?.trim()
+        val cleanTitle = title.replace(Regex("\\s*[(\\[].*?[)\\]]"), "").trim()
+        val terms = listOf(
+            listOfNotNull(mainArtist, title).joinToString(" "),
+            listOfNotNull(mainArtist, cleanTitle).joinToString(" "),
+            cleanTitle,
+        ).distinct()
+        for (t in terms) {
+            if (t.isBlank()) continue
+            try {
+                val term = URLEncoder.encode(t, "UTF-8")
+                val search = read(URL("https://itunes.apple.com/search?term=$term&entity=song&limit=1&country=CL"))
+                val results = JSONObject(String(search)).getJSONArray("results")
+                if (results.length() == 0) continue
+                val url = results.getJSONObject(0).getString("artworkUrl100")
+                    .replace("100x100bb", "300x300bb")
+                val bytes = read(URL(url))
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.let { return it }
+            } catch (e: Exception) {
+            }
         }
-    } catch (e: Exception) {
-        null
+        return null
     }
 
     private fun read(url: URL): ByteArray {

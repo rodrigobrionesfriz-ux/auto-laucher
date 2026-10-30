@@ -17,6 +17,12 @@ object Syu {
     private const val TOOLKIT = "com.syu.ipc.IRemoteToolkit"
     private const val MODULE = "com.syu.ipc.IRemoteModule"
     private const val CALLBACK = "com.syu.ipc.IModuleCallback"
+    private const val BT_MODULE = 2
+    // Códigos del módulo Bluetooth (descubiertos en esta radio)
+    private const val C_TITLE = 0
+    private const val C_ARTIST = 1
+    private const val C_DEVICE = 7
+    private const val C_ALBUM = 26
 
     var status = "Sin conectar"
         private set
@@ -61,12 +67,12 @@ object Syu {
     private fun subscribe(toolkit: IBinder) {
         var modules = 0
         var regs = 0
-        for (m in 0..12) {
+        for (m in listOf(BT_MODULE)) {
             val module = getModule(toolkit, m) ?: continue
             modules++
             val cb = Cb(m)
             callbacks.add(cb)
-            for (code in 0..150) {
+            for (code in 0..60) {
                 if (register(module, cb, code)) regs++
             }
         }
@@ -130,6 +136,15 @@ object Syu {
     }
 
     private fun onUpdate(module: Int, code: Int, ints: IntArray?, flts: FloatArray?, strs: Array<String?>?) {
+        if (module == BT_MODULE) {
+            val first = strs?.firstOrNull()
+            when (code) {
+                C_TITLE -> Music.syuTitle = first
+                C_ARTIST -> Music.syuArtist = first
+                C_ALBUM -> Music.syuAlbum = first
+                C_DEVICE -> Music.syuDevice = first
+            }
+        }
         val key = "m$module c$code"
         val strText = strs?.filterNotNull()?.filter { it.isNotBlank() }.orEmpty()
         val line = "ints=${ints?.joinToString(",", "[", "]")} strs=${strText.joinToString(" | ", "[", "]")}"
