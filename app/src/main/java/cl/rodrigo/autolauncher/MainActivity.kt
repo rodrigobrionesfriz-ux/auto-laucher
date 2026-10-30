@@ -88,6 +88,7 @@ class MainActivity : Activity() {
         musicElapsed = findViewById(R.id.musicElapsed)
         musicTotal = findViewById(R.id.musicTotal)
         Music.register(this)
+        Syu.connect(this)
         if (Discovery.needsScan(this)) {
             Thread {
                 Discovery.scan(applicationContext)

@@ -22,7 +22,7 @@ object Diag {
 
     fun add(s: String) = synchronized(this) {
         lines.addFirst("${fmt.format(Date())}  ${s.take(600)}")
-        while (lines.size > 60) lines.removeLast()
+        while (lines.size > 150) lines.removeLast()
     }
 
     fun all(): String = synchronized(this) {
@@ -157,7 +157,9 @@ class DiagActivity : Activity() {
     private fun refresh() {
         val actions = Discovery.cached(this)
         text.text = buildString {
-            append("== SESIONES MULTIMEDIA ==\n")
+            append("== SERVICIO SYU ==\n")
+            append(Syu.report())
+            append("\n\n== SESIONES MULTIMEDIA ==\n")
             append(Music.sessionsReport(this@DiagActivity))
             append("\n\n== RECIBIDO (más reciente arriba) ==\n")
             append(Diag.all())
