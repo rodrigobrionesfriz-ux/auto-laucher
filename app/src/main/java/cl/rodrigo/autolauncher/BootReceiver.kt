@@ -8,6 +8,7 @@ import android.content.Intent
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+        OdoService.start(ctx)
         try {
             ctx.startActivity(Intent(ctx, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

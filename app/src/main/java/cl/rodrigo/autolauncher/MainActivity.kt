@@ -96,6 +96,8 @@ class MainActivity : Activity() {
         findViewById<View>(R.id.btnMusic)?.setOnLongClickListener { Apps.pick(this, Apps.musicSlot) {}; true }
         setupLogo("left", R.id.logoLeft, R.id.logoLeftImg, R.id.logoLeftText)
         setupLogo("right", R.id.logoRight, R.id.logoRightImg, R.id.logoRightText)
+        setupOdometer()
+        OdoService.start(this)
         weatherTemp = findViewById(R.id.weatherTemp)
         weatherDesc = findViewById(R.id.weatherDesc)
         weatherPlace = findViewById(R.id.weatherPlace)
@@ -406,6 +408,63 @@ class MainActivity : Activity() {
 
     // ---------- Luces del vehículo ----------
 
+    // ---------- Odómetro ----------
+
+    private var odoTotal: TextView? = null
+    private var odoTrip: TextView? = null
+
+    private fun setupOdometer() {
+        Odo.load(this)
+        odoTotal = findViewById(R.id.odoTotal)
+        odoTrip = findViewById(R.id.odoTrip)
+        val tf = Fonts.bold(this)
+        odoTotal?.typeface = tf
+        odoTrip?.typeface = tf
+        findViewById<View>(R.id.btnTripReset)?.setOnClickListener { confirmTripReset() }
+        findViewById<View>(R.id.odoBox)?.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Odómetro")
+                .setItems(arrayOf("Ajustar kilometraje del auto", "Reiniciar viaje")) { _, w ->
+                    if (w == 0) askOdometer() else confirmTripReset()
+                }.show()
+        }
+        refreshOdometer()
+    }
+
+    private fun refreshOdometer() {
+        val tot = odoTotal ?: return
+        tot.text = if (Odo.isSet || Odo.totalKm(this) > 0) Odo.fmtTotal(Odo.totalKm(this)) else "Tocar para ajustar"
+        tot.textSize = if (tot.text.startsWith("Tocar")) 13f else 17f
+        odoTrip?.text = Odo.fmtTrip(Odo.tripKm(this))
+    }
+
+    private fun confirmTripReset() {
+        AlertDialog.Builder(this)
+            .setTitle("Reiniciar viaje")
+            .setMessage("El contador de viaje (${Odo.fmtTrip(Odo.tripKm(this))}) vuelve a cero. El odómetro total no cambia.")
+            .setPositiveButton("Reiniciar") { _, _ -> Odo.resetTrip(this); refreshOdometer() }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun askOdometer() {
+        val input = android.widget.EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            hint = "Ej: 185432"
+            if (Odo.isSet) setText(Math.floor(Odo.totalKm(this@MainActivity)).toLong().toString())
+            setSelection(text.length)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Kilometraje del auto")
+            .setMessage("Escribe lo que marca el tablero de tu auto. Desde ahí se va sumando lo que recorras.")
+            .setView(input)
+            .setPositiveButton("Guardar") { _, _ ->
+                input.text.toString().toLongOrNull()?.let { Odo.setTotalKm(this, it.toDouble()); refreshOdometer() }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
     // ---------- Foto propia del auto (diseño cockpit) ----------
 
     private fun loadCarPhoto() {
@@ -527,7 +586,7 @@ class MainActivity : Activity() {
 
     override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, results: IntArray) {
         super.onRequestPermissionsResult(code, perms, results)
-        if (hasLocationPermission()) startGps()
+        if (hasLocationPermission()) { startGps(); OdoService.start(this) }
     }
 
     private fun startGps() {
@@ -606,6 +665,7 @@ class MainActivity : Activity() {
         updateWeatherIfNeeded(now)
         applyNight()
         gauge.setLights(Syu.lightsOn)
+        refreshOdometer()
         refreshMusic()
     }
 

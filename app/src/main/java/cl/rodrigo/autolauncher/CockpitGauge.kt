@@ -231,7 +231,7 @@ class CockpitGauge @JvmOverloads constructor(
         pLine.color = Color.parseColor("#34363A"); pLine.strokeWidth = 1.5f
         canvas.drawCircle(cx, cy, r * 0.875f, pLine)
         pText.typeface = tfBold
-        pText.textSize = r * 0.085f
+        pText.textSize = r * 0.105f
         var d = 0
         while (d < 360) {
             val rel = Math.toRadians((d - bearing - 90).toDouble())
@@ -245,7 +245,7 @@ class CockpitGauge @JvmOverloads constructor(
                     name == "N" -> colDanger
                     else -> colLabel
                 }
-                val rr = r * 0.928f
+                val rr = r * 0.925f
                 val ly = cy + rr * sa - (pText.descent() + pText.ascent()) / 2
                 canvas.save()
                 canvas.rotate((d - bearing), cx + rr * ca, ly + (pText.descent() + pText.ascent()) / 2)
