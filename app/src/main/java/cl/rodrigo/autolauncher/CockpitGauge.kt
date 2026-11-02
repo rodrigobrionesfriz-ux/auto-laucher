@@ -159,8 +159,12 @@ class CockpitGauge @JvmOverloads constructor(
         photoRect.set(l, t, l + w, t + h)
         val layer = canvas.saveLayer(photoRect, null)
         canvas.drawBitmap(bmp, null, photoRect, pPhoto)
-        pMask.shader = RadialGradient(l + w / 2, t + h * 0.55f, w * 0.62f,
-            intArrayOf(Color.BLACK, Color.BLACK, Color.TRANSPARENT), floatArrayOf(0f, 0.7f, 1f), Shader.TileMode.CLAMP)
+        // Difuminado elíptico que sigue la forma de la foto
+        val mcx = l + w / 2; val mcy = t + h * 0.55f
+        pMask.shader = RadialGradient(mcx, mcy, w * 0.52f,
+            intArrayOf(Color.BLACK, Color.BLACK, Color.TRANSPARENT), floatArrayOf(0f, 0.62f, 1f), Shader.TileMode.CLAMP).apply {
+            setLocalMatrix(android.graphics.Matrix().apply { setScale(1f, (h * 0.58f) / (w * 0.52f), mcx, mcy) })
+        }
         canvas.drawRect(photoRect, pMask)
         canvas.restoreToCount(layer)
         if (lights > 0.01f) {
