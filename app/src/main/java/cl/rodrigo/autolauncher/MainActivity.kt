@@ -392,7 +392,7 @@ class MainActivity : Activity() {
                 val opts = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 contentResolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it, null, opts) }
                 var sample = 1
-                while (opts.outWidth / sample > 800 || opts.outHeight / sample > 400) sample *= 2
+                while (opts.outWidth / sample > 1200 || opts.outHeight / sample > 900) sample *= 2
                 val bmp = contentResolver.openInputStream(uri)?.use {
                     android.graphics.BitmapFactory.decodeStream(it, null,
                         android.graphics.BitmapFactory.Options().apply { inSampleSize = sample })

@@ -145,7 +145,45 @@ class CockpitGauge @JvmOverloads constructor(
 
     /** Foto propia del auto (vista trasera). null = usar el dibujo. */
     var carPhoto: android.graphics.Bitmap? = null
-        set(v) { field = v; invalidate() }
+        set(v) { field = v; preparePhoto(v); invalidate() }
+
+    private var photoOff: android.graphics.Bitmap? = null   // misma foto con los focos atenuados
+    private var photoTransparent = false
+    private val redSpots = ArrayList<FloatArray>()           // centros de luces rojas (x, y relativos, radio)
+
+    /** Analiza la foto: fondo transparente, dónde están los focos rojos y genera la versión "apagada". */
+    private fun preparePhoto(bmp: android.graphics.Bitmap?) {
+        photoOff = null; redSpots.clear(); photoTransparent = false
+        if (bmp == null) return
+        val w = bmp.width; val h = bmp.height
+        val px = IntArray(w * h)
+        bmp.getPixels(px, 0, w, 0, 0, w, h)
+        photoTransparent = Color.alpha(px[0]) < 20 || Color.alpha(px[w - 1]) < 20
+        val off = px.copyOf()
+        // Acumuladores por mitad (izquierda / derecha) para ubicar los focos
+        val sx = DoubleArray(2); val sy = DoubleArray(2); val n = IntArray(2)
+        for (i in px.indices) {
+            val c = px[i]
+            val a = Color.alpha(c); if (a < 40) continue
+            val r = Color.red(c); val g = Color.green(c); val b = Color.blue(c)
+            if (r > 120 && r > g * 1.7f && r > b * 1.7f) {
+                // Rojo encendido: se oscurece para la versión apagada
+                val f = 0.32f
+                off[i] = Color.argb(a, (r * f + 20).toInt().coerceAtMost(255), (g * 0.6f).toInt(), (b * 0.6f).toInt())
+                if (r > 170) {
+                    val x = i % w; val y = i / w
+                    val side = if (x < w / 2) 0 else 1
+                    sx[side] += x.toDouble(); sy[side] += y.toDouble(); n[side]++
+                }
+            }
+        }
+        val total = n[0] + n[1]
+        if (total < w * h / 400) return   // casi sin rojo: la foto no trae luces encendidas
+        photoOff = android.graphics.Bitmap.createBitmap(off, w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        for (side in 0..1) if (n[side] > 0) {
+            redSpots.add(floatArrayOf((sx[side] / n[side] / w).toFloat(), (sy[side] / n[side] / h).toFloat()))
+        }
+    }
 
     private val pPhoto = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val pMask = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -154,30 +192,43 @@ class CockpitGauge @JvmOverloads constructor(
     private val pGlowRed = Paint(Paint.ANTI_ALIAS_FLAG)
     private val photoRect = RectF()
 
-    /** Dibuja la foto con los bordes difuminados (para que se funda con el fondo) y luces encima. */
+    /** Dibuja la foto (con bordes difuminados si no trae fondo transparente) y sus luces. */
     private fun drawPhoto(canvas: Canvas, bmp: android.graphics.Bitmap, l: Float, t: Float, w: Float, h: Float) {
         photoRect.set(l, t, l + w, t + h)
+        val off = photoOff
         val layer = canvas.saveLayer(photoRect, null)
-        canvas.drawBitmap(bmp, null, photoRect, pPhoto)
-        // Difuminado elíptico que sigue la forma de la foto
-        val mcx = l + w / 2; val mcy = t + h * 0.55f
-        pMask.shader = RadialGradient(mcx, mcy, w * 0.52f,
-            intArrayOf(Color.BLACK, Color.BLACK, Color.TRANSPARENT), floatArrayOf(0f, 0.62f, 1f), Shader.TileMode.CLAMP).apply {
-            setLocalMatrix(android.graphics.Matrix().apply { setScale(1f, (h * 0.58f) / (w * 0.52f), mcx, mcy) })
+        if (off != null) {
+            // Mezcla entre la versión apagada y la encendida según el estado de las luces
+            pPhoto.alpha = 255
+            canvas.drawBitmap(off, null, photoRect, pPhoto)
+            if (lights > 0.01f) {
+                pPhoto.alpha = (lights * 255).roundToInt()
+                canvas.drawBitmap(bmp, null, photoRect, pPhoto)
+                pPhoto.alpha = 255
+            }
+        } else {
+            canvas.drawBitmap(bmp, null, photoRect, pPhoto)
         }
-        canvas.drawRect(photoRect, pMask)
+        if (!photoTransparent) {
+            val mcx = l + w / 2; val mcy = t + h * 0.55f
+            pMask.shader = RadialGradient(mcx, mcy, w * 0.52f,
+                intArrayOf(Color.BLACK, Color.BLACK, Color.TRANSPARENT), floatArrayOf(0f, 0.62f, 1f), Shader.TileMode.CLAMP).apply {
+                setLocalMatrix(android.graphics.Matrix().apply { setScale(1f, (h * 0.58f) / (w * 0.52f), mcx, mcy) })
+            }
+            canvas.drawRect(photoRect, pMask)
+        }
         canvas.restoreToCount(layer)
         if (lights > 0.01f) {
             val a = lights
-            // Reflejo rojo en el piso y halos donde suelen ir los focos traseros
-            pGlowRed.shader = RadialGradient(l + w / 2, t + h * 0.96f, w * 0.55f,
-                Color.argb((a * 90).toInt(), 255, 32, 32), Color.TRANSPARENT, Shader.TileMode.CLAMP)
-            canvas.drawOval(l - w * 0.05f, t + h * 0.85f, l + w * 1.05f, t + h * 1.05f, pGlowRed)
-            for (fx in floatArrayOf(0.12f, 0.88f)) {
-                val gx = l + w * fx; val gy = t + h * 0.62f
-                pGlowRed.shader = RadialGradient(gx, gy, w * 0.16f,
-                    Color.argb((a * 150).toInt(), 255, 40, 40), Color.TRANSPARENT, Shader.TileMode.CLAMP)
-                canvas.drawCircle(gx, gy, w * 0.16f, pGlowRed)
+            pGlowRed.shader = RadialGradient(l + w / 2, t + h * 0.97f, w * 0.55f,
+                Color.argb((a * 80).toInt(), 255, 32, 32), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            canvas.drawOval(l - w * 0.05f, t + h * 0.88f, l + w * 1.05f, t + h * 1.06f, pGlowRed)
+            val spots = if (redSpots.isNotEmpty()) redSpots else listOf(floatArrayOf(0.12f, 0.62f), floatArrayOf(0.88f, 0.62f))
+            for (sp in spots) {
+                val gx = l + w * sp[0]; val gy = t + h * sp[1]
+                pGlowRed.shader = RadialGradient(gx, gy, w * 0.2f,
+                    Color.argb((a * 110).toInt(), 255, 40, 40), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+                canvas.drawCircle(gx, gy, w * 0.2f, pGlowRed)
             }
         }
     }
