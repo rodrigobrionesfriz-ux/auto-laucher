@@ -1,36 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="200dp" android:height="140dp"
-    android:viewportWidth="200" android:viewportHeight="140">
+    android:width="200dp" android:height="168dp"
+    android:viewportWidth="200" android:viewportHeight="168">
     <!-- sombra -->
-    <path android:fillColor="#000000" android:fillAlpha="0.65" android:pathData="M6,134a94,7 0,1 0,188 0a94,7 0,1 0,-188 0z" />
-    <!-- neumáticos -->
-    <path android:fillColor="#07080A" android:pathData="M18,100h28v34q0,4 -4,4h-20q-4,0 -4,-4zM154,100h28v34q0,4 -4,4h-20q-4,0 -4,-4z" />
-    <!-- parachoque -->
-    <path android:fillColor="#0E1014" android:strokeColor="#2B3038" android:strokeWidth="0.8"
-        android:pathData="M12,98H188V118Q188,127 179,127H21Q12,127 12,118Z" />
-    <path android:fillColor="#2A2F36" android:pathData="M30,116h22v3h-22zM148,116h22v3h-22z" />
-    <!-- carrocería / portón -->
-    <path android:fillColor="#16191E" android:strokeColor="#3C434D" android:strokeWidth="1"
-        android:pathData="M18,56H182Q191,56 191,65V98Q191,104 185,104H15Q9,104 9,98V65Q9,56 18,56Z" />
-    <path android:strokeColor="#4B5360" android:strokeWidth="0.8" android:pathData="M14,60H186" />
-    <!-- cabina -->
-    <path android:fillColor="#111318" android:strokeColor="#3C434D" android:strokeWidth="1"
-        android:pathData="M40,13H160Q166,13 168,19L181,56H19L32,19Q34,13 40,13Z" />
-    <!-- alerón -->
-    <path android:fillColor="#1E2229" android:pathData="M36,10H164Q168,10 168,14V17H32V14Q32,10 36,10Z" />
-    <!-- luneta -->
+    <path android:fillColor="#000000" android:fillAlpha="0.7" android:pathData="M4,158a96,9 0,1 0,192 0a96,9 0,1 0,-192 0z" />
+    <!-- neumáticos traseros -->
+    <path android:fillColor="#06070A" android:pathData="M16,136h30v24q0,4 -4,4h-22q-4,0 -4,-4zM154,136h30v24q0,4 -4,4h-22q-4,0 -4,-4z" />
+    <!-- silueta (laterales en perspectiva hacia adelante) -->
+    <path android:fillColor="#121418" android:strokeColor="#353C46" android:strokeWidth="1"
+        android:pathData="M10,146V108L20,94L36,34L46,12H154L164,34L180,94L190,108V146Z" />
+    <!-- reflejo lateral -->
+    <path android:strokeColor="#4A5260" android:strokeWidth="1.2" android:strokeLineCap="round"
+        android:pathData="M15,104L33,40M185,104L167,40" />
+    <!-- capó -->
+    <path android:fillColor="#1A1D23" android:strokeColor="#353C46" android:strokeWidth="0.8"
+        android:pathData="M47,12H153L157,28H43Z" />
+    <path android:strokeColor="#2C323B" android:strokeWidth="0.8" android:pathData="M70,13L67,27M130,13L133,27" />
+    <!-- parabrisas -->
+    <path android:fillColor="#0A0D12" android:pathData="M43,28H157L160,38H40Z" />
+    <!-- espejos -->
+    <path android:fillColor="#1A1D23" android:strokeColor="#353C46" android:strokeWidth="0.8"
+        android:pathData="M37,36L25,33L23,41L35,43ZM163,36L175,33L177,41L165,43Z" />
+    <!-- ventanas laterales -->
+    <path android:fillColor="#090C11" android:pathData="M37,40H42L31,80L22,86ZM163,40H158L169,80L178,86Z" />
+    <!-- techo -->
+    <path android:fillColor="#1C2027" android:strokeColor="#3A414C" android:strokeWidth="0.8"
+        android:pathData="M42,38H158L171,82H29Z" />
+    <path android:fillColor="#FFFFFF" android:fillAlpha="0.05" android:pathData="M60,40H140L146,62H54Z" />
+    <!-- barras de techo -->
+    <path android:strokeColor="#9AA4B1" android:strokeWidth="2.4" android:strokeLineCap="round"
+        android:pathData="M50,42L39,78M150,42L161,78" />
+    <path android:strokeColor="#4B5360" android:strokeWidth="1.4" android:pathData="M47,54H153M43,68H157" />
+    <!-- alerón y luneta -->
+    <path android:fillColor="#1E2229" android:pathData="M28,80H172L174,86H26Z" />
+    <path android:fillColor="#3E1519" android:pathData="M88,81H112V84H88Z" />
     <path android:fillColor="#080B10" android:strokeColor="#2A3038" android:strokeWidth="0.8"
-        android:pathData="M43,21H157L166,51H34Z" />
-    <path android:strokeColor="#FFFFFF" android:strokeAlpha="0.12" android:strokeWidth="3"
-        android:strokeLineCap="round" android:pathData="M54,25L64,47M70,25L77,40" />
-    <!-- barra cromada y patente en blanco -->
-    <path android:fillColor="#7D8691" android:pathData="M58,66H142V69H58Z" />
+        android:pathData="M26,86H174L181,104H19Z" />
+    <path android:strokeColor="#FFFFFF" android:strokeAlpha="0.12" android:strokeWidth="3" android:strokeLineCap="round"
+        android:pathData="M42,89L36,101M58,89L54,97" />
+    <!-- portón trasero -->
+    <path android:fillColor="#17191F" android:strokeColor="#3C434D" android:strokeWidth="1"
+        android:pathData="M17,104H183Q190,104 190,111V136H10V111Q10,104 17,104Z" />
+    <path android:strokeColor="#4B5360" android:strokeWidth="0.8" android:pathData="M14,108H186" />
+    <path android:fillColor="#7D8691" android:pathData="M60,112H140V115H60Z" />
+    <!-- patente en blanco -->
     <path android:fillColor="#C7CDD5" android:strokeColor="#22262C" android:strokeWidth="1"
-        android:pathData="M78,75H122V92H78Z" />
+        android:pathData="M79,119H121V133H79Z" />
     <!-- focos traseros apagados -->
     <path android:fillColor="#3E1519" android:strokeColor="#22262C" android:strokeWidth="0.8"
-        android:pathData="M11,63H30Q32,63 32,65V90Q32,92 30,92H11ZM189,63H170Q168,63 168,65V90Q168,92 170,92H189Z" />
-    <!-- tercera luz de freno apagada -->
-    <path android:fillColor="#3E1519" android:pathData="M86,11H114V14H86Z" />
+        android:pathData="M11,109H32Q34,109 34,111V130Q34,132 32,132H11ZM189,109H168Q166,109 166,111V130Q166,132 168,132H189Z" />
+    <!-- parachoque -->
+    <path android:fillColor="#0D0F13" android:strokeColor="#2B3038" android:strokeWidth="0.8"
+        android:pathData="M9,136H191V146Q191,154 183,154H17Q9,154 9,146Z" />
+    <path android:fillColor="#2A2F36" android:pathData="M26,146h20v3h-20zM154,146h20v3h-20z" />
 </vector>

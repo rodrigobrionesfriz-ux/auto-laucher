@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="200dp" android:height="140dp"
-    android:viewportWidth="200" android:viewportHeight="140">
+    android:width="200dp" android:height="168dp"
+    android:viewportWidth="200" android:viewportHeight="168">
+    <!-- focos delanteros (al fondo) -->
+    <path android:fillColor="#FFF4CC" android:fillAlpha="0.35" android:pathData="M36,10a14,6 0,1 0,28 0a14,6 0,1 0,-28 0zM136,10a14,6 0,1 0,28 0a14,6 0,1 0,-28 0z" />
+    <path android:fillColor="#FFF8DE" android:pathData="M46,12H62L61,15H45ZM138,12H154L155,15H139Z" />
     <!-- reflejo rojo en el piso -->
-    <path android:fillColor="#FF2020" android:fillAlpha="0.22" android:pathData="M0,132a100,8 0,1 0,200 0a100,8 0,1 0,-200 0z" />
-    <!-- halo de los focos -->
-    <path android:fillColor="#FF2A2A" android:fillAlpha="0.28" android:pathData="M2,77a20,24 0,1 0,40 0a20,24 0,1 0,-40 0zM158,77a20,24 0,1 0,40 0a20,24 0,1 0,-40 0z" />
-    <!-- focos encendidos -->
+    <path android:fillColor="#FF2020" android:fillAlpha="0.22" android:pathData="M0,158a100,10 0,1 0,200 0a100,10 0,1 0,-200 0z" />
+    <!-- halo de los focos traseros -->
+    <path android:fillColor="#FF2A2A" android:fillAlpha="0.28" android:pathData="M2,120a20,22 0,1 0,40 0a20,22 0,1 0,-40 0zM158,120a20,22 0,1 0,40 0a20,22 0,1 0,-40 0z" />
+    <!-- focos traseros encendidos -->
     <path android:fillColor="#FF2B2B"
-        android:pathData="M11,63H30Q32,63 32,65V90Q32,92 30,92H11ZM189,63H170Q168,63 168,65V90Q168,92 170,92H189Z" />
-    <path android:fillColor="#FF9A9A" android:pathData="M14,67H28V71H14ZM186,67H172V71H186ZM14,80H28V83H14ZM186,80H172V83H186Z" />
+        android:pathData="M11,109H32Q34,109 34,111V130Q34,132 32,132H11ZM189,109H168Q166,109 166,111V130Q166,132 168,132H189Z" />
+    <path android:fillColor="#FF9A9A" android:pathData="M14,113H30V116H14ZM186,113H170V116H186ZM14,124H30V126H14ZM186,124H170V126H186Z" />
     <!-- luz de patente -->
-    <path android:fillColor="#FFF6D8" android:fillAlpha="0.35" android:pathData="M78,75H122V92H78Z" />
+    <path android:fillColor="#FFF6D8" android:fillAlpha="0.35" android:pathData="M79,119H121V133H79Z" />
 </vector>

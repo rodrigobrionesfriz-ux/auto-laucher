@@ -28,6 +28,19 @@ interface Gauge {
     var status: String
     fun setSpeed(kmh: Int)
     fun setLights(on: Boolean)
+    fun setBearing(deg: Float) {}
+}
+
+/** Fuentes incluidas en la app. */
+object Fonts {
+    private var bold: Typeface? = null
+    private var medium: Typeface? = null
+    fun bold(ctx: Context): Typeface = bold ?: (try {
+        Typeface.createFromAsset(ctx.assets, "fonts/orbitron_700.ttf")
+    } catch (e: Exception) { Typeface.DEFAULT_BOLD }).also { bold = it }
+    fun medium(ctx: Context): Typeface = medium ?: (try {
+        Typeface.createFromAsset(ctx.assets, "fonts/orbitron_500.ttf")
+    } catch (e: Exception) { Typeface.DEFAULT }).also { medium = it }
 }
 
 /**
@@ -72,8 +85,14 @@ class CockpitGauge @JvmOverloads constructor(
     private val pArc = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
     private val pTick = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND }
     private val pText = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
-    private val tfBold = Typeface.create("sans-serif-condensed", Typeface.BOLD)
-    private val tfNormal = Typeface.create("sans-serif", Typeface.NORMAL)
+    private val tfBold = Fonts.bold(context)
+    private val tfNormal = Fonts.medium(context)
+    private val tfPlain = Typeface.create("sans-serif", Typeface.NORMAL)
+
+    // Brújula
+    private var bearing = 0f
+    private var bearingAnim: ValueAnimator? = null
+    private val compass = arrayOf("N", "NE", "E", "SE", "S", "SO", "O", "NO")
 
     private val arcRect = RectF()
     private val path = Path()
@@ -124,6 +143,24 @@ class CockpitGauge @JvmOverloads constructor(
         }
     }
 
+    override fun setBearing(deg: Float) {
+        var to = ((deg % 360) + 360) % 360
+        val from = bearing
+        // Girar por el camino más corto
+        var diff = to - from
+        if (diff > 180) diff -= 360
+        if (diff < -180) diff += 360
+        if (kotlin.math.abs(diff) < 1f) return
+        to = from + diff
+        bearingAnim?.cancel()
+        bearingAnim = ValueAnimator.ofFloat(from, to).apply {
+            duration = 700
+            interpolator = DecelerateInterpolator()
+            addUpdateListener { bearing = ((it.animatedValue as Float) % 360 + 360) % 360; invalidate() }
+            start()
+        }
+    }
+
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         cx = w / 2f
         r = min(w / 2f, h * 0.47f) - 4f
@@ -134,7 +171,7 @@ class CockpitGauge @JvmOverloads constructor(
         pRing.shader = LinearGradient(0f, cy - r, 0f, cy + r,
             intArrayOf(Color.parseColor("#7E8B9C"), Color.parseColor("#232B35"), Color.parseColor("#4A5565")),
             null, Shader.TileMode.CLAMP)
-        pRing.strokeWidth = r * 0.035f
+        pRing.strokeWidth = r * 0.025f
         val vy = cy + r * 0.28f
         pRoad.shader = LinearGradient(0f, vy, 0f, h.toFloat(),
             Color.argb(0, 20, 28, 38), Color.argb(242, 30, 40, 52), Shader.TileMode.CLAMP)
@@ -150,6 +187,50 @@ class CockpitGauge @JvmOverloads constructor(
         else -> base
     }
 
+    /** Anillo exterior de brújula: gira para que la dirección de avance quede arriba. */
+    private fun drawCompass(canvas: Canvas) {
+        pLine.color = Color.parseColor("#2A3442"); pLine.strokeWidth = 1.5f
+        canvas.drawCircle(cx, cy, r * 0.875f, pLine)
+        pText.typeface = tfNormal
+        pText.textSize = r * 0.058f
+        var d = 0
+        while (d < 360) {
+            val rel = Math.toRadians((d - bearing - 90).toDouble())
+            val ca = cos(rel).toFloat(); val sa = sin(rel).toFloat()
+            if (d % 45 == 0) {
+                val name = compass[d / 45]
+                var diff = kotlin.math.abs(((d - bearing) % 360 + 360) % 360)
+                if (diff > 180) diff = 360 - diff
+                pText.color = when {
+                    diff < 22.5f -> colAccent
+                    name == "N" -> colDanger
+                    else -> colLabel
+                }
+                val rr = r * 0.93f
+                val ly = cy + rr * sa - (pText.descent() + pText.ascent()) / 2
+                canvas.save()
+                canvas.rotate((d - bearing), cx + rr * ca, ly + (pText.descent() + pText.ascent()) / 2)
+                canvas.drawText(name, cx + rr * ca, ly, pText)
+                canvas.restore()
+            } else {
+                val major = d % 15 == 0
+                pTick.color = if (major) colLabel else colDim
+                pTick.strokeWidth = if (major) r * 0.008f else r * 0.005f
+                val r1 = r * 0.965f; val r2 = if (major) r * 0.905f else r * 0.935f
+                canvas.drawLine(cx + r1 * ca, cy + r1 * sa, cx + r2 * ca, cy + r2 * sa, pTick)
+            }
+            d += 5
+        }
+        // Marcador fijo arriba
+        path.reset()
+        path.moveTo(cx, cy - r * 0.885f)
+        path.lineTo(cx - r * 0.03f, cy - r * 0.84f)
+        path.lineTo(cx + r * 0.03f, cy - r * 0.84f)
+        path.close()
+        pFill.color = colAccent
+        canvas.drawPath(path, pFill)
+    }
+
     override fun onDraw(canvas: Canvas) {
         if (r <= 0) return
         val h = height.toFloat()
@@ -157,12 +238,13 @@ class CockpitGauge @JvmOverloads constructor(
 
         // Cara y anillo
         canvas.drawCircle(cx, cy, r, pFace)
-        canvas.drawCircle(cx, cy, r * 0.985f, pRing)
+        canvas.drawCircle(cx, cy, r * 0.988f, pRing)
+        drawCompass(canvas)
 
         // Túnel
         val vy = cy + r * 0.28f
         canvas.save()
-        path.reset(); path.addCircle(cx, cy, r * 0.6f, Path.Direction.CW)
+        path.reset(); path.addCircle(cx, cy, r * 0.54f, Path.Direction.CW)
         canvas.clipPath(path)
         pLine.strokeWidth = 1f
         for (k in 1..7) {
@@ -197,34 +279,34 @@ class CockpitGauge @JvmOverloads constructor(
         }
 
         // Pista y arco de velocidad
-        val ra = r * 0.9f
+        val ra = r * 0.81f
         arcRect.set(cx - ra, cy - ra, cx + ra, cy + ra)
-        pArc.color = Color.parseColor("#1A222D"); pArc.strokeWidth = r * 0.04f
+        pArc.color = Color.parseColor("#1A222D"); pArc.strokeWidth = r * 0.035f
         canvas.drawArc(arcRect, 135f, 270f, false, pArc)
         val sw = 270f * shown / maxSpeed
         if (sw > 0.5f) {
-            pArc.color = col; pArc.alpha = 51; pArc.strokeWidth = r * 0.1f
+            pArc.color = col; pArc.alpha = 51; pArc.strokeWidth = r * 0.085f
             canvas.drawArc(arcRect, 135f, sw, false, pArc)
-            pArc.alpha = 255; pArc.strokeWidth = r * 0.04f
+            pArc.alpha = 255; pArc.strokeWidth = r * 0.035f
             canvas.drawArc(arcRect, 135f, sw, false, pArc)
         }
 
         // Marcas y números
         pText.typeface = tfNormal
-        pText.textSize = r * 0.075f
+        pText.textSize = r * 0.062f
         var v = 0
         while (v <= maxSpeed) {
             val major = v % 20 == 0
             val a = Math.toRadians(ang(v.toFloat()).toDouble())
             val ca = cos(a).toFloat(); val sa = sin(a).toFloat()
-            val r1 = r * 0.83f; val r2 = if (major) r * 0.75f else r * 0.79f
+            val r1 = r * 0.765f; val r2 = if (major) r * 0.69f else r * 0.725f
             pTick.color = if (v <= shown) col else if (major) colText else colDim
-            pTick.strokeWidth = if (major) r * 0.018f else r * 0.01f
+            pTick.strokeWidth = if (major) r * 0.016f else r * 0.009f
             canvas.drawLine(cx + r1 * ca, cy + r1 * sa, cx + r2 * ca, cy + r2 * sa, pTick)
             if (major) {
                 pText.color = if (v > limit) colDanger else colLabel
-                val ly = cy + r * 0.67f * sa - (pText.descent() + pText.ascent()) / 2
-                canvas.drawText(v.toString(), cx + r * 0.67f * ca, ly, pText)
+                val ly = cy + r * 0.61f * sa - (pText.descent() + pText.ascent()) / 2
+                canvas.drawText(v.toString(), cx + r * 0.61f * ca, ly, pText)
             }
             v += 10
         }
@@ -233,7 +315,7 @@ class CockpitGauge @JvmOverloads constructor(
         val a = Math.toRadians(ang(shown).toDouble())
         val ca = cos(a).toFloat(); val sa = sin(a).toFloat()
         val px = -sa; val py = ca
-        val ri = r * 0.6f; val ro = r * 0.92f; val wi = r * 0.03f; val wo = r * 0.007f
+        val ri = r * 0.55f; val ro = r * 0.83f; val wi = r * 0.028f; val wo = r * 0.007f
         path.reset()
         path.moveTo(cx + ri * ca + wi * px, cy + ri * sa + wi * py)
         path.lineTo(cx + ro * ca + wo * px, cy + ro * sa + wo * py)
@@ -244,20 +326,22 @@ class CockpitGauge @JvmOverloads constructor(
         canvas.drawPath(path, pFill)
 
         // Textos
-        pText.typeface = tfBold
-        pText.color = colText; pText.textSize = r * 0.08f
-        canvas.drawText(heading, cx, cy - r * 0.42f, pText)
-        pText.color = speedColor(shown, colText); pText.textSize = r * 0.38f
-        canvas.drawText(shown.roundToInt().toString(), cx, cy + r * 0.06f, pText)
         pText.typeface = tfNormal
-        pText.color = colAccent; pText.textSize = r * 0.075f
-        canvas.drawText("km/h", cx, cy + r * 0.17f, pText)
-        pText.color = colStatus; pText.textSize = r * 0.058f
-        canvas.drawText(status, cx, cy + r * 0.27f, pText)
+        pText.color = colAccent; pText.textSize = r * 0.06f
+        canvas.drawText("${bearing.roundToInt() % 360}° ${heading}", cx, cy - r * 0.36f, pText)
+        pText.typeface = tfBold
+        pText.color = speedColor(shown, colText); pText.textSize = r * 0.33f
+        canvas.drawText(shown.roundToInt().toString(), cx, cy + r * 0.07f, pText)
+        pText.typeface = tfNormal
+        pText.color = colAccent; pText.textSize = r * 0.06f
+        canvas.drawText("km/h", cx, cy + r * 0.18f, pText)
+        pText.typeface = tfPlain
+        pText.color = colStatus; pText.textSize = r * 0.055f
+        canvas.drawText(status, cx, cy + r * 0.28f, pText)
 
         // Camioneta
-        val cw = r * 0.78f
-        val ch = cw * 140f / 200f
+        val cw = r * 0.86f
+        val ch = cw * 168f / 200f
         val l = (cx - cw / 2).toInt()
         val t = (h - ch - 2).toInt()
         car?.setBounds(l, t, (l + cw).toInt(), (t + ch).toInt())

@@ -278,14 +278,14 @@
                 android:orientation="horizontal">
 
                 <ImageButton
-                    android:id="@+id/btnMusic"
+                    android:id="@+id/btnPhone"
                     android:layout_width="62dp"
                     android:layout_height="62dp"
                     android:background="@drawable/bg_round"
-                    android:contentDescription="Música"
+                    android:contentDescription="Teléfono"
                     android:padding="17dp"
                     android:scaleType="fitCenter"
-                    android:src="@drawable/ic_music"
+                    android:src="@drawable/ic_phone"
                     android:tint="@color/text" />
 
                 <ImageButton
@@ -322,6 +322,18 @@
                     android:padding="14dp"
                     android:scaleType="fitCenter"
                     android:src="@drawable/ic_next"
+                    android:tint="@color/text" />
+
+                <ImageButton
+                    android:id="@+id/btnMusic"
+                    android:layout_width="62dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_height="62dp"
+                    android:background="@drawable/bg_round"
+                    android:contentDescription="Música"
+                    android:padding="17dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_music"
                     android:tint="@color/text" />
             </LinearLayout>
 

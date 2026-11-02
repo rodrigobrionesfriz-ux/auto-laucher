@@ -86,6 +86,10 @@ class MainActivity : Activity() {
         gaugeView.setOnLongClickListener { lightsMenu(); true }
         frame = findViewById(R.id.frame)
         (gaugeView as? CockpitGauge)?.onShown = { frame?.level = it }
+        findViewById<View>(R.id.btnPhone)?.setOnClickListener {
+            Apps.slotFor("phone")?.let { Apps.open(this, it) {} }
+        }
+        if (cockpit) findViewById<TextView>(R.id.clock).typeface = Fonts.bold(this)
         findViewById<View>(R.id.btnMusic)?.setOnClickListener { Apps.open(this, Apps.musicSlot) {} }
         findViewById<View>(R.id.btnMusic)?.setOnLongClickListener { Apps.pick(this, Apps.musicSlot) {}; true }
         setupLogo("left", R.id.logoLeft, R.id.logoLeftImg, R.id.logoLeftText)
@@ -536,7 +540,10 @@ class MainActivity : Activity() {
         lastLocation = loc
         val kmh = if (loc.hasSpeed()) (loc.speed * 3.6f).roundToInt() else 0
         gauge.setSpeed(if (kmh < 2) 0 else kmh)
-        if (loc.hasBearing() && kmh >= 3) gauge.heading = cardinal(loc.bearing)
+        if (loc.hasBearing() && kmh >= 3) {
+            gauge.heading = cardinal(loc.bearing)
+            gauge.setBearing(loc.bearing)
+        }
     }
 
     private fun cardinal(deg: Float): String {
