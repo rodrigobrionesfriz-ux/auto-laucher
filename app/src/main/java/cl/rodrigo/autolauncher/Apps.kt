@@ -53,7 +53,7 @@ object Apps {
             .sortedBy { it.label.lowercase() }
     }
 
-    const val MAX_DOCK = 9
+    val MAX_DOCK get() = if (cockpit) 9 else 6
     /** true cuando está activo el diseño cockpit (usa su propia lista de accesos). */
     var cockpit = false
     private val defaultDock get() =
