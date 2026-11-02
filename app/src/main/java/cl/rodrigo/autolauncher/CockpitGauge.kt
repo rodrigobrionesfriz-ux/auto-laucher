@@ -143,6 +143,41 @@ class CockpitGauge @JvmOverloads constructor(
         }
     }
 
+    /** Foto propia del auto (vista trasera). null = usar el dibujo. */
+    var carPhoto: android.graphics.Bitmap? = null
+        set(v) { field = v; invalidate() }
+
+    private val pPhoto = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    private val pMask = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN)
+    }
+    private val pGlowRed = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val photoRect = RectF()
+
+    /** Dibuja la foto con los bordes difuminados (para que se funda con el fondo) y luces encima. */
+    private fun drawPhoto(canvas: Canvas, bmp: android.graphics.Bitmap, l: Float, t: Float, w: Float, h: Float) {
+        photoRect.set(l, t, l + w, t + h)
+        val layer = canvas.saveLayer(photoRect, null)
+        canvas.drawBitmap(bmp, null, photoRect, pPhoto)
+        pMask.shader = RadialGradient(l + w / 2, t + h * 0.55f, w * 0.62f,
+            intArrayOf(Color.BLACK, Color.BLACK, Color.TRANSPARENT), floatArrayOf(0f, 0.7f, 1f), Shader.TileMode.CLAMP)
+        canvas.drawRect(photoRect, pMask)
+        canvas.restoreToCount(layer)
+        if (lights > 0.01f) {
+            val a = lights
+            // Reflejo rojo en el piso y halos donde suelen ir los focos traseros
+            pGlowRed.shader = RadialGradient(l + w / 2, t + h * 0.96f, w * 0.55f,
+                Color.argb((a * 90).toInt(), 255, 32, 32), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            canvas.drawOval(l - w * 0.05f, t + h * 0.85f, l + w * 1.05f, t + h * 1.05f, pGlowRed)
+            for (fx in floatArrayOf(0.12f, 0.88f)) {
+                val gx = l + w * fx; val gy = t + h * 0.62f
+                pGlowRed.shader = RadialGradient(gx, gy, w * 0.16f,
+                    Color.argb((a * 150).toInt(), 255, 40, 40), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+                canvas.drawCircle(gx, gy, w * 0.16f, pGlowRed)
+            }
+        }
+    }
+
     override fun setBearing(deg: Float) {
         var to = ((deg % 360) + 360) % 360
         val from = bearing
@@ -339,17 +374,22 @@ class CockpitGauge @JvmOverloads constructor(
         pText.color = colStatus; pText.textSize = r * 0.055f
         canvas.drawText(status, cx, cy + r * 0.28f, pText)
 
-        // Camioneta
+        // Camioneta (dibujo o foto propia)
         val cw = r * 0.86f
-        val ch = cw * 168f / 200f
+        val photo = carPhoto
+        val ch = if (photo != null) cw * photo.height / photo.width.coerceAtLeast(1) else cw * 168f / 200f
         val l = (cx - cw / 2).toInt()
         val t = (h - ch - 2).toInt()
-        car?.setBounds(l, t, (l + cw).toInt(), (t + ch).toInt())
-        car?.draw(canvas)
-        if (lights > 0.01f) {
-            carLights?.setBounds(l, t, (l + cw).toInt(), (t + ch).toInt())
-            carLights?.alpha = (lights * 255).roundToInt()
-            carLights?.draw(canvas)
+        if (photo != null) {
+            drawPhoto(canvas, photo, l.toFloat(), t.toFloat(), cw, ch)
+        } else {
+            car?.setBounds(l, t, (l + cw).toInt(), (t + ch).toInt())
+            car?.draw(canvas)
+            if (lights > 0.01f) {
+                carLights?.setBounds(l, t, (l + cw).toInt(), (t + ch).toInt())
+                carLights?.alpha = (lights * 255).roundToInt()
+                carLights?.draw(canvas)
+            }
         }
     }
 }
