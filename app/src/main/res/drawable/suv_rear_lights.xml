@@ -2,17 +2,20 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="200dp" android:height="168dp"
     android:viewportWidth="200" android:viewportHeight="168">
-    <!-- focos delanteros (al fondo) -->
-    <path android:fillColor="#FFF4CC" android:fillAlpha="0.35" android:pathData="M36,10a14,6 0,1 0,28 0a14,6 0,1 0,-28 0zM136,10a14,6 0,1 0,28 0a14,6 0,1 0,-28 0z" />
-    <path android:fillColor="#FFF8DE" android:pathData="M46,12H62L61,15H45ZM138,12H154L155,15H139Z" />
+    <!-- focos delanteros LED (al fondo) -->
+    <path android:fillColor="#FFF4CC" android:fillAlpha="0.35" android:pathData="M38,15a16,5 0,1 0,32 0a16,5 0,1 0,-32 0zM130,15a16,5 0,1 0,32 0a16,5 0,1 0,-32 0z" />
+    <path android:fillColor="#FFF8DE" android:pathData="M48,15H68L66,18H46ZM132,15H152L154,18H134Z" />
     <!-- reflejo rojo en el piso -->
-    <path android:fillColor="#FF2020" android:fillAlpha="0.22" android:pathData="M0,158a100,10 0,1 0,200 0a100,10 0,1 0,-200 0z" />
-    <!-- halo de los focos traseros -->
-    <path android:fillColor="#FF2A2A" android:fillAlpha="0.28" android:pathData="M2,120a20,22 0,1 0,40 0a20,22 0,1 0,-40 0zM158,120a20,22 0,1 0,40 0a20,22 0,1 0,-40 0z" />
-    <!-- focos traseros encendidos -->
+    <path android:fillColor="#FF2020" android:fillAlpha="0.22" android:pathData="M0,157a100,10 0,1 0,200 0a100,10 0,1 0,-200 0z" />
+    <!-- halo de luces -->
+    <path android:fillColor="#FF2A2A" android:fillAlpha="0.25" android:pathData="M2,110a28,14 0,1 0,56 0a28,14 0,1 0,-56 0zM142,110a28,14 0,1 0,56 0a28,14 0,1 0,-56 0zM40,102H160V114H40Z" />
+    <!-- focos y barra encendidos -->
     <path android:fillColor="#FF2B2B"
-        android:pathData="M11,109H32Q34,109 34,111V130Q34,132 32,132H11ZM189,109H168Q166,109 166,111V130Q166,132 168,132H189Z" />
-    <path android:fillColor="#FF9A9A" android:pathData="M14,113H30V116H14ZM186,113H170V116H186ZM14,124H30V126H14ZM186,124H170V126H186Z" />
+        android:pathData="M12,107Q26,103 47,105L45,112Q27,112 12,116ZM188,107Q174,103 153,105L155,112Q173,112 188,116Z" />
+    <path android:fillColor="#FF3B3B" android:pathData="M47,106.5H153V109H47Z" />
+    <path android:fillColor="#FFB3B3" android:pathData="M16,108Q28,105 44,106.5L43.5,108Q28,108 16,111ZM184,108Q172,105 156,106.5L156.5,108Q172,108 184,111ZM60,107.2H140V108.2H60Z" />
+    <!-- tercera luz de freno -->
+    <path android:fillColor="#FF3B3B" android:pathData="M88,76Q100,75 112,76V78Q100,77 88,78Z" />
     <!-- luz de patente -->
-    <path android:fillColor="#FFF6D8" android:fillAlpha="0.35" android:pathData="M79,119H121V133H79Z" />
+    <path android:fillColor="#FFF6D8" android:fillAlpha="0.35" android:pathData="M80,117H120V130H80Z" />
 </vector>
