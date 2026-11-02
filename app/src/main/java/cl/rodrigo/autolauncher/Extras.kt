@@ -22,7 +22,7 @@ object Prefs {
     fun nightMode(ctx: Context): String = p(ctx).getString("night_mode", NIGHT_AUTO) ?: NIGHT_AUTO
     fun setNightMode(ctx: Context, v: String) = p(ctx).edit().putString("night_mode", v).apply()
 
-    fun cockpit(ctx: Context): Boolean = p(ctx).getBoolean("cockpit", false)
+    fun cockpit(ctx: Context): Boolean = p(ctx).getBoolean("cockpit", true)
     fun setCockpit(ctx: Context, v: Boolean) = p(ctx).edit().putBoolean("cockpit", v).apply()
 
     fun logoText(ctx: Context, side: String): String = p(ctx).getString("logo_text_$side", "") ?: ""
