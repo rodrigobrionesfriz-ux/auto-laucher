@@ -85,7 +85,7 @@ class MainActivity : Activity() {
         gauge.limit = Prefs.speedLimit(this)
         gaugeView.setOnLongClickListener { if (cockpit) carMenu() else lightsMenu(); true }
         if (cockpit) loadCarPhoto()
-        logoRefreshers["car"] = { loadCarPhoto() }
+        logoRefreshers["car"] = { setCarMode("custom") }
         frame = findViewById(R.id.frame)
         (gaugeView as? CockpitGauge)?.onShown = { frame?.level = it }
         findViewById<View>(R.id.btnPhone)?.setOnClickListener {
@@ -467,37 +467,52 @@ class MainActivity : Activity() {
 
     // ---------- Foto propia del auto (diseño cockpit) ----------
 
+    /** "photo" = imagen incluida (predeterminada), "custom" = foto propia, "drawing" = dibujo vectorial. */
+    private fun carMode(): String = getSharedPreferences("launcher", MODE_PRIVATE).getString("car_mode", null)
+        ?: if (logoFile("car").exists()) "custom" else "photo"
+
+    private fun setCarMode(m: String) {
+        getSharedPreferences("launcher", MODE_PRIVATE).edit().putString("car_mode", m).apply()
+        loadCarPhoto()
+    }
+
     private fun loadCarPhoto() {
+        val g = gauge as? CockpitGauge ?: return
         val f = logoFile("car")
-        (gauge as? CockpitGauge)?.carPhoto =
-            if (f.exists()) android.graphics.BitmapFactory.decodeFile(f.path) else null
+        g.carPhoto = when (carMode()) {
+            "custom" -> if (f.exists()) android.graphics.BitmapFactory.decodeFile(f.path) else null
+            "drawing" -> null
+            else -> android.graphics.BitmapFactory.decodeResource(resources, R.drawable.suv_photo,
+                android.graphics.BitmapFactory.Options().apply { inScaled = false })
+        }
     }
 
     private fun carMenu() {
-        val hasPhoto = logoFile("car").exists()
-        val items = mutableListOf("Luces del vehículo", "Usar una foto de mi auto")
-        if (hasPhoto) items.add("Volver al dibujo")
-        AlertDialog.Builder(this).setItems(items.toTypedArray()) { _, w ->
-            when (w) {
-                0 -> lightsMenu()
-                1 -> AlertDialog.Builder(this)
-                    .setTitle("Foto de tu auto")
-                    .setMessage("Elige una foto de tu auto tomada desde atrás y un poco desde arriba. " +
-                        "Queda mejor si el auto ocupa casi toda la foto. Si la foto tiene el fondo " +
-                        "recortado (PNG transparente), se ve perfecta.")
-                    .setPositiveButton("Elegir foto") { _, _ ->
-                        try {
-                            pendingLogo = "car"
-                            startActivityForResult(Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
-                                .addCategory(Intent.CATEGORY_OPENABLE), REQ_LOGO)
-                        } catch (e: Exception) {
-                            Toast.makeText(this, "No hay una app para elegir imágenes en esta radio", Toast.LENGTH_LONG).show()
-                        }
+        val mode = carMode()
+        val options = ArrayList<Pair<String, () -> Unit>>()
+        options.add("Luces del vehículo" to { lightsMenu() })
+        if (mode != "photo") options.add("Usar la imagen incluida" to { setCarMode("photo") })
+        options.add("Usar una foto de mi auto" to {
+            AlertDialog.Builder(this)
+                .setTitle("Foto de tu auto")
+                .setMessage("Elige una foto de tu auto tomada desde atrás. Si tiene el fondo " +
+                    "recortado (PNG transparente), se ve perfecta.")
+                .setPositiveButton("Elegir foto") { _, _ ->
+                    try {
+                        pendingLogo = "car"
+                        startActivityForResult(Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
+                            .addCategory(Intent.CATEGORY_OPENABLE), REQ_LOGO)
+                    } catch (e: Exception) {
+                        Toast.makeText(this, "No hay una app para elegir imágenes en esta radio", Toast.LENGTH_LONG).show()
                     }
-                    .setNegativeButton("Cancelar", null).show()
-                2 -> { logoFile("car").delete(); loadCarPhoto() }
-            }
-        }.show()
+                }
+                .setNegativeButton("Cancelar", null).show()
+        })
+        if (mode == "custom") options.add("Quitar mi foto" to { logoFile("car").delete(); setCarMode("photo") })
+        if (mode != "drawing") options.add("Usar el dibujo" to { setCarMode("drawing") })
+        AlertDialog.Builder(this)
+            .setItems(options.map { it.first }.toTypedArray()) { _, w -> options[w].second() }
+            .show()
     }
 
     private fun lightsMenu() {
