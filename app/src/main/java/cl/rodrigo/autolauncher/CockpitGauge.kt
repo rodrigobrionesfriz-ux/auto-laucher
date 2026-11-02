@@ -147,6 +147,13 @@ class CockpitGauge @JvmOverloads constructor(
     var carPhoto: android.graphics.Bitmap? = null
         set(v) { field = v; preparePhoto(v); invalidate() }
 
+    /** Foto encendida + su versión apagada ya preparada (imagen incluida en la app). */
+    fun setCarPhotos(on: android.graphics.Bitmap?, off: android.graphics.Bitmap?) {
+        carPhoto = on
+        if (on != null && off != null) photoOff = off
+        invalidate()
+    }
+
     private var photoOff: android.graphics.Bitmap? = null   // misma foto con los focos atenuados
     private var photoTransparent = false
     private val redSpots = ArrayList<FloatArray>()           // centros de luces rojas (x, y relativos, radio)

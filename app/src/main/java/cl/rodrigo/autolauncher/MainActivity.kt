@@ -479,11 +479,13 @@ class MainActivity : Activity() {
     private fun loadCarPhoto() {
         val g = gauge as? CockpitGauge ?: return
         val f = logoFile("car")
-        g.carPhoto = when (carMode()) {
-            "custom" -> if (f.exists()) android.graphics.BitmapFactory.decodeFile(f.path) else null
-            "drawing" -> null
-            else -> android.graphics.BitmapFactory.decodeResource(resources, R.drawable.suv_photo,
-                android.graphics.BitmapFactory.Options().apply { inScaled = false })
+        val raw = android.graphics.BitmapFactory.Options().apply { inScaled = false }
+        when (carMode()) {
+            "custom" -> g.carPhoto = if (f.exists()) android.graphics.BitmapFactory.decodeFile(f.path) else null
+            "drawing" -> g.carPhoto = null
+            else -> g.setCarPhotos(
+                android.graphics.BitmapFactory.decodeResource(resources, R.drawable.suv_photo, raw),
+                android.graphics.BitmapFactory.decodeResource(resources, R.drawable.suv_photo_off, raw))
         }
     }
 
