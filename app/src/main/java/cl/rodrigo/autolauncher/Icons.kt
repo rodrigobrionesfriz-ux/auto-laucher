@@ -16,13 +16,17 @@ import android.os.Build
 object Icons {
     private val slotColors = mapOf(
         "maps" to "#34A853", "phone" to "#1E88E5", "settings" to "#607D8B",
-        "carlink" to "#7E57C2", "radio" to "#F4511E", "music" to "#E91E63",
+        "carlink" to "#7E57C2", "radio" to "#F4511E", "music" to "#E91E63", "eq" to "#00897B",
     )
+
+    /** true = recortar en círculo (diseño cockpit); false = cuadrado redondeado. */
+    var round = false
 
     private fun canvasFor(sizePx: Int): Pair<Bitmap, Canvas> {
         val bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         val path = Path().apply {
+            if (round) { addCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f, Path.Direction.CW); return@apply }
             addRoundRect(RectF(0f, 0f, sizePx.toFloat(), sizePx.toFloat()), sizePx * 0.22f, sizePx * 0.22f, Path.Direction.CW)
         }
         c.clipPath(path)

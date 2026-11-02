@@ -27,13 +27,15 @@ object Apps {
     val slots = listOf(
         Slot("maps", "Mapas", R.drawable.ic_nav,
             listOf("com.google.android.apps.maps", "com.waze", "waze", "maps", "mapas", "navi")),
-        Slot("carlink", "Car Link", R.drawable.ic_link,
+        Slot("carlink", "CarPlay", R.drawable.ic_link,
             listOf("car link", "carlink", "zlink", "autokit", "carplay", "android auto")),
         Slot("radio", "Radio", R.drawable.ic_radio,
             listOf("radio", "fm radio", ".fm")),
         Slot("phone", "Teléfono", R.drawable.ic_phone,
             listOf("bluetooth", "teléfono", "telefono", "phone", "dialer", "btphone")),
-        Slot("settings", "Ajustes", R.drawable.ic_tune, emptyList()),
+        Slot("settings", "Ajustes", R.drawable.ic_gear, emptyList()),
+        Slot("eq", "Ecualizador", R.drawable.ic_eq,
+            listOf("eq", "ecualizador", "equalizer", "equaliser", "ecualiz", "sound", "audio", "dsp")),
     )
 
     val musicSlot = Slot("music", "Música", R.drawable.ic_music,
@@ -50,18 +52,23 @@ object Apps {
     }
 
     const val MAX_DOCK = 6
-    private val defaultDock = listOf("maps", "phone", "settings", "carlink", "radio")
+    /** true cuando está activo el diseño cockpit (usa su propia lista de accesos). */
+    var cockpit = false
+    private val defaultDock get() =
+        if (cockpit) listOf("maps", "phone", "eq", "carlink", "settings")
+        else listOf("maps", "phone", "settings", "carlink", "radio")
+    private val dockPref get() = if (cockpit) "dock_cockpit" else "dock"
 
     fun dockKeys(ctx: Context): MutableList<String> {
-        val raw = prefs(ctx).getString("dock", null) ?: return defaultDock.toMutableList()
+        val raw = prefs(ctx).getString(dockPref, null) ?: return defaultDock.toMutableList()
         return raw.split(",").filter { it.isNotBlank() }.toMutableList()
     }
 
     fun saveDock(ctx: Context, keys: List<String>) {
-        prefs(ctx).edit().putString("dock", keys.joinToString(",")).apply()
+        prefs(ctx).edit().putString(dockPref, keys.joinToString(",")).apply()
     }
 
-    fun resetDock(ctx: Context) = prefs(ctx).edit().remove("dock").apply()
+    fun resetDock(ctx: Context) = prefs(ctx).edit().remove(dockPref).apply()
 
     fun slotFor(key: String): Slot? = slots.firstOrNull { it.key == key }
 

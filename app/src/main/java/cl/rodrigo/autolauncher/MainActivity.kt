@@ -28,7 +28,9 @@ class MainActivity : Activity() {
 
     private val handler = Handler(Looper.getMainLooper())
 
-    private lateinit var gauge: SpeedGauge
+    private lateinit var gauge: Gauge
+    private var frame: CockpitFrame? = null
+    private var cockpit = false
     private lateinit var weatherTemp: TextView
     private lateinit var weatherDesc: TextView
     private lateinit var weatherPlace: TextView
@@ -73,11 +75,21 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        cockpit = Prefs.cockpit(this)
+        Apps.cockpit = cockpit
+        Icons.round = cockpit
+        setContentView(if (cockpit) R.layout.activity_cockpit else R.layout.activity_main)
 
-        gauge = findViewById(R.id.gauge)
+        val gaugeView = findViewById<View>(R.id.gauge)
+        gauge = gaugeView as Gauge
         gauge.limit = Prefs.speedLimit(this)
-        gauge.setOnLongClickListener { lightsMenu(); true }
+        gaugeView.setOnLongClickListener { lightsMenu(); true }
+        frame = findViewById(R.id.frame)
+        (gaugeView as? CockpitGauge)?.onShown = { frame?.level = it }
+        findViewById<View>(R.id.btnMusic)?.setOnClickListener { Apps.open(this, Apps.musicSlot) {} }
+        findViewById<View>(R.id.btnMusic)?.setOnLongClickListener { Apps.pick(this, Apps.musicSlot) {}; true }
+        setupLogo("left", R.id.logoLeft, R.id.logoLeftImg, R.id.logoLeftText)
+        setupLogo("right", R.id.logoRight, R.id.logoRightImg, R.id.logoRightText)
         weatherTemp = findViewById(R.id.weatherTemp)
         weatherDesc = findViewById(R.id.weatherDesc)
         weatherPlace = findViewById(R.id.weatherPlace)
@@ -175,20 +187,20 @@ class MainActivity : Activity() {
     // ---------- Barra de accesos ----------
 
     private fun buildDock() {
-        val dock = findViewById<LinearLayout>(R.id.dock)
+        val dock = findViewById<android.view.ViewGroup>(R.id.dock)
         dock.removeAllViews()
         val inflater = LayoutInflater.from(this)
         val keys = Apps.dockKeys(this)
 
         fun addRow(label: String, setIcon: (ImageView) -> Unit): View {
-            val row = inflater.inflate(R.layout.item_row, dock, false)
+            val row = inflater.inflate(if (cockpit) R.layout.item_round else R.layout.item_row, dock, false)
             setIcon(row.findViewById(R.id.tileIcon))
             row.findViewById<TextView>(R.id.tileLabel).text = label
             dock.addView(row)
             return row.findViewById(R.id.rowBody)
         }
 
-        val iconPx = (58 * resources.displayMetrics.density).toInt()
+        val iconPx = ((if (cockpit) 66 else 58) * resources.displayMetrics.density).toInt()
         fun appIcon(pkg: String?, iv: ImageView): Boolean {
             if (pkg == null || pkg == Apps.SETTINGS) return false
             return try {
@@ -281,6 +293,7 @@ class MainActivity : Activity() {
         val items = arrayOf(
             "Modo noche: $modeName",
             "Aviso de velocidad: ${Prefs.speedLimit(this)} km/h",
+            "Diseño: ${if (cockpit) "Cockpit" else "Clásico"}",
             "Luces del vehículo",
             "Buscar actualización (tienes ${Updater.currentName(this)})",
             "Diagnóstico",
@@ -301,11 +314,88 @@ class MainActivity : Activity() {
                             gauge.limit = limits[w]
                         }.show()
                 }
-                2 -> lightsMenu()
-                3 -> Updater.checkNow(this)
-                4 -> startActivity(Intent(this, DiagActivity::class.java))
+                2 -> AlertDialog.Builder(this)
+                    .setItems(arrayOf("Clásico", "Cockpit")) { _, w ->
+                        if ((w == 1) != cockpit) { Prefs.setCockpit(this, w == 1); recreate() }
+                    }.show()
+                3 -> lightsMenu()
+                4 -> Updater.checkNow(this)
+                5 -> startActivity(Intent(this, DiagActivity::class.java))
             }
         }.show()
+    }
+
+    // ---------- Imágenes / textos de las esquinas (diseño cockpit) ----------
+
+    private fun logoFile(side: String) = java.io.File(filesDir, "logo_$side.png")
+
+    private fun setupLogo(side: String, boxId: Int, imgId: Int, textId: Int) {
+        val box = findViewById<View>(boxId) ?: return
+        val img = findViewById<ImageView>(imgId)
+        val txt = findViewById<TextView>(textId)
+        fun refresh() {
+            val f = logoFile(side)
+            val bmp = if (f.exists()) android.graphics.BitmapFactory.decodeFile(f.path) else null
+            img.setImageBitmap(bmp)
+            val t = Prefs.logoText(this, side)
+            txt.text = if (bmp == null && t.isBlank()) "＋ imagen o texto" else if (bmp == null) t else ""
+            txt.alpha = if (bmp == null && t.isBlank()) 0.35f else 1f
+            txt.textSize = if (bmp == null && t.isBlank()) 13f else 20f
+        }
+        refresh()
+        logoRefreshers[side] = { refresh() }
+        val menu = View.OnClickListener {
+            AlertDialog.Builder(this)
+                .setItems(arrayOf("Elegir imagen", "Escribir texto", "Quitar")) { _, w ->
+                    when (w) {
+                        0 -> try {
+                            pendingLogo = side
+                            startActivityForResult(Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
+                                .addCategory(Intent.CATEGORY_OPENABLE), REQ_LOGO)
+                        } catch (e: Exception) {
+                            Toast.makeText(this, "No hay una app para elegir imágenes en esta radio", Toast.LENGTH_LONG).show()
+                        }
+                        1 -> {
+                            val input = android.widget.EditText(this).apply { setText(Prefs.logoText(this@MainActivity, side)) }
+                            AlertDialog.Builder(this).setTitle("Texto").setView(input)
+                                .setPositiveButton("Guardar") { _, _ ->
+                                    Prefs.setLogoText(this, side, input.text.toString().trim())
+                                    logoFile(side).delete(); refresh()
+                                }.setNegativeButton("Cancelar", null).show()
+                        }
+                        2 -> { logoFile(side).delete(); Prefs.setLogoText(this, side, ""); refresh() }
+                    }
+                }.show()
+        }
+        box.setOnClickListener(menu)
+    }
+
+    private var pendingLogo: String? = null
+    private val logoRefreshers = HashMap<String, () -> Unit>()
+
+    @Deprecated("API clásica, suficiente para Android 8")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQ_LOGO || resultCode != RESULT_OK) return
+        val side = pendingLogo ?: return
+        val uri = data?.data ?: return
+        Thread {
+            try {
+                val opts = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                contentResolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it, null, opts) }
+                var sample = 1
+                while (opts.outWidth / sample > 800 || opts.outHeight / sample > 400) sample *= 2
+                val bmp = contentResolver.openInputStream(uri)?.use {
+                    android.graphics.BitmapFactory.decodeStream(it, null,
+                        android.graphics.BitmapFactory.Options().apply { inSampleSize = sample })
+                } ?: return@Thread
+                logoFile(side).outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+                Prefs.setLogoText(this, side, "")
+                runOnUiThread { logoRefreshers[side]?.invoke() }
+            } catch (e: Exception) {
+                runOnUiThread { Toast.makeText(this, "No se pudo leer la imagen", Toast.LENGTH_LONG).show() }
+            }
+        }.start()
     }
 
     // ---------- Luces del vehículo ----------
@@ -566,4 +656,6 @@ class MainActivity : Activity() {
         val s = ms / 1000
         return "%d:%02d".format(s / 60, s % 60)
     }
+
+    companion object { private const val REQ_LOGO = 41 }
 }

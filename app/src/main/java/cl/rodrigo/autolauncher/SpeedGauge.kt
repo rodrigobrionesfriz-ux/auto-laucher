@@ -27,14 +27,14 @@ import kotlin.math.sin
  */
 class SpeedGauge @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null,
-) : View(context, attrs) {
+) : View(context, attrs), Gauge {
 
     var maxSpeed = 180
-    var limit = 100
+    override var limit = 100
         set(v) { field = v; invalidate() }
-    var heading = "--"
+    override var heading = "--"
         set(v) { if (field != v) { field = v; invalidate() } }
-    var status = ""
+    override var status = ""
         set(v) { if (field != v) { field = v; invalidate() } }
 
     private var shown = 0f          // valor que dibuja la aguja (animado)
@@ -92,7 +92,7 @@ class SpeedGauge @JvmOverloads constructor(
     }
 
     /** Nueva velocidad: la aguja se mueve suave hasta ella (las lecturas GPS llegan cada 1 s). */
-    fun setSpeed(kmh: Int) {
+    override fun setSpeed(kmh: Int) {
         val t = kmh.coerceIn(0, maxSpeed).toFloat()
         if (t == target && anim?.isRunning != true) return
         target = t
@@ -105,7 +105,7 @@ class SpeedGauge @JvmOverloads constructor(
         }
     }
 
-    fun setLights(on: Boolean) {
+    override fun setLights(on: Boolean) {
         val to = if (on) 1f else 0f
         if (to == lights && lightAnim?.isRunning != true) return
         lightAnim?.cancel()

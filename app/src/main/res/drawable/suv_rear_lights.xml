@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp" android:height="140dp"
+    android:viewportWidth="200" android:viewportHeight="140">
+    <!-- reflejo rojo en el piso -->
+    <path android:fillColor="#FF2020" android:fillAlpha="0.22" android:pathData="M0,132a100,8 0,1 0,200 0a100,8 0,1 0,-200 0z" />
+    <!-- halo de los focos -->
+    <path android:fillColor="#FF2A2A" android:fillAlpha="0.28" android:pathData="M2,77a20,24 0,1 0,40 0a20,24 0,1 0,-40 0zM158,77a20,24 0,1 0,40 0a20,24 0,1 0,-40 0z" />
+    <!-- focos encendidos -->
+    <path android:fillColor="#FF2B2B"
+        android:pathData="M11,63H30Q32,63 32,65V90Q32,92 30,92H11ZM189,63H170Q168,63 168,65V90Q168,92 170,92H189Z" />
+    <path android:fillColor="#FF9A9A" android:pathData="M14,67H28V71H14ZM186,67H172V71H186ZM14,80H28V83H14ZM186,80H172V83H186Z" />
+    <!-- luz de patente -->
+    <path android:fillColor="#FFF6D8" android:fillAlpha="0.35" android:pathData="M78,75H122V92H78Z" />
+</vector>

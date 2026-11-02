@@ -22,6 +22,12 @@ object Prefs {
     fun nightMode(ctx: Context): String = p(ctx).getString("night_mode", NIGHT_AUTO) ?: NIGHT_AUTO
     fun setNightMode(ctx: Context, v: String) = p(ctx).edit().putString("night_mode", v).apply()
 
+    fun cockpit(ctx: Context): Boolean = p(ctx).getBoolean("cockpit", false)
+    fun setCockpit(ctx: Context, v: Boolean) = p(ctx).edit().putBoolean("cockpit", v).apply()
+
+    fun logoText(ctx: Context, side: String): String = p(ctx).getString("logo_text_$side", "") ?: ""
+    fun setLogoText(ctx: Context, side: String, v: String) = p(ctx).edit().putString("logo_text_$side", v).apply()
+
     fun speedLimit(ctx: Context): Int = p(ctx).getInt("speed_limit", 100)
     fun setSpeedLimit(ctx: Context, v: Int) = p(ctx).edit().putInt("speed_limit", v).apply()
 }
