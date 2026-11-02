@@ -77,7 +77,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         cockpit = Prefs.cockpit(this)
         Apps.cockpit = cockpit
-        Icons.round = cockpit
+        Icons.round = false
         setContentView(if (cockpit) R.layout.activity_cockpit else R.layout.activity_main)
 
         val gaugeView = findViewById<View>(R.id.gauge)

@@ -47,11 +47,11 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
 
         // Muesca superior (hora)
         path.reset()
-        path.moveTo(w * 0.36f, 0f); path.lineTo(w * 0.40f, h * 0.085f)
-        path.lineTo(w * 0.60f, h * 0.085f); path.lineTo(w * 0.64f, 0f)
+        path.moveTo(w * 0.33f, 0f); path.lineTo(w * 0.375f, h * 0.108f)
+        path.lineTo(w * 0.625f, h * 0.108f); path.lineTo(w * 0.67f, 0f)
         pPanel.shader = null; pPanel.color = Color.parseColor("#0F1620")
         canvas.drawPath(path, pPanel); canvas.drawPath(path, pStroke)
-        canvas.drawLine(w * 0.40f, h * 0.085f, w * 0.60f, h * 0.085f, pGlow)
+        canvas.drawLine(w * 0.375f, h * 0.108f, w * 0.625f, h * 0.108f, pGlow)
 
         // Base inferior (controles)
         path.reset()

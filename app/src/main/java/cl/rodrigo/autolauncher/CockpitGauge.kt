@@ -230,8 +230,8 @@ class CockpitGauge @JvmOverloads constructor(
     private fun drawCompass(canvas: Canvas) {
         pLine.color = Color.parseColor("#2A3442"); pLine.strokeWidth = 1.5f
         canvas.drawCircle(cx, cy, r * 0.875f, pLine)
-        pText.typeface = tfNormal
-        pText.textSize = r * 0.058f
+        pText.typeface = tfBold
+        pText.textSize = r * 0.085f
         var d = 0
         while (d < 360) {
             val rel = Math.toRadians((d - bearing - 90).toDouble())
@@ -245,7 +245,7 @@ class CockpitGauge @JvmOverloads constructor(
                     name == "N" -> colDanger
                     else -> colLabel
                 }
-                val rr = r * 0.93f
+                val rr = r * 0.928f
                 val ly = cy + rr * sa - (pText.descent() + pText.ascent()) / 2
                 canvas.save()
                 canvas.rotate((d - bearing), cx + rr * ca, ly + (pText.descent() + pText.ascent()) / 2)

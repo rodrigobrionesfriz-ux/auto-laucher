@@ -17,7 +17,7 @@
         <!-- Arriba: hora al centro y Apps a la derecha -->
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="50dp">
+            android:layout_height="62dp">
 
             <TextClock
                 android:id="@+id/clock"
@@ -29,7 +29,7 @@
                 android:includeFontPadding="false"
                 android:letterSpacing="0.04"
                 android:textColor="@color/text"
-                android:textSize="34sp"
+                android:textSize="46sp"
                 android:textStyle="bold" />
 
             <ImageButton
