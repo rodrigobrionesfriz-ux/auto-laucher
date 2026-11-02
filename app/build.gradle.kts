@@ -16,10 +16,20 @@ android {
         versionName = "1.0.$run"
     }
 
+    // Llave fija: todas las versiones se firman igual, así Android permite actualizar encima
+    signingConfigs {
+        create("fija") {
+            storeFile = file("release.jks")
+            storePassword = "bca65fb681afa88afdafd74fab088cc5"
+            keyAlias = "autolauncher"
+            keyPassword = "bca65fb681afa88afdafd74fab088cc5"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("fija")
         }
     }
     compileOptions {
