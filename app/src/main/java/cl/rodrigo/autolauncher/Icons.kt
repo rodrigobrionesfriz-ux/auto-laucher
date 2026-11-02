@@ -16,7 +16,7 @@ import android.os.Build
 object Icons {
     private val slotColors = mapOf(
         "maps" to "#34A853", "phone" to "#1E88E5", "settings" to "#607D8B",
-        "carlink" to "#7E57C2", "radio" to "#F4511E", "music" to "#E91E63", "eq" to "#00897B",
+        "carlink" to "#7E57C2", "radio" to "#F4511E", "music" to "#E91E63", "eq" to "#00897B", "bt" to "#1565C0",
     )
 
     /** true = recortar en círculo (diseño cockpit); false = cuadrado redondeado. */

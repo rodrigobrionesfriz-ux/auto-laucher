@@ -34,6 +34,8 @@ object Apps {
         Slot("phone", "Teléfono", R.drawable.ic_phone,
             listOf("bluetooth", "teléfono", "telefono", "phone", "dialer", "btphone")),
         Slot("settings", "Ajustes", R.drawable.ic_gear, emptyList()),
+        Slot("bt", "Bluetooth", R.drawable.ic_bt,
+            listOf("com.syu.bt", "bluetooth", "bt music", "btmusic", "bt")),
         Slot("eq", "Ecualizador", R.drawable.ic_eq,
             listOf("eq", "ecualizador", "equalizer", "equaliser", "ecualiz", "sound", "audio", "dsp")),
     )
@@ -51,16 +53,24 @@ object Apps {
             .sortedBy { it.label.lowercase() }
     }
 
-    const val MAX_DOCK = 6
+    const val MAX_DOCK = 9
     /** true cuando está activo el diseño cockpit (usa su propia lista de accesos). */
     var cockpit = false
     private val defaultDock get() =
-        if (cockpit) listOf("maps", "phone", "eq", "carlink", "settings")
+        if (cockpit) listOf("maps", "phone", "bt", "radio", "eq", "carlink", "settings")
         else listOf("maps", "phone", "settings", "carlink", "radio")
     private val dockPref get() = if (cockpit) "dock_cockpit" else "dock"
 
     fun dockKeys(ctx: Context): MutableList<String> {
         val raw = prefs(ctx).getString(dockPref, null) ?: return defaultDock.toMutableList()
+        // Una vez: agregar Radio y Bluetooth a la lista guardada del diseño cockpit
+        if (cockpit && !prefs(ctx).getBoolean("dock_cockpit_v2", false)) {
+            val list = raw.split(",").filter { it.isNotBlank() }.toMutableList()
+            if ("bt" !in list) list.add(minOf(2, list.size), "bt")
+            if ("radio" !in list) list.add(minOf(3, list.size), "radio")
+            prefs(ctx).edit().putString(dockPref, list.joinToString(",")).putBoolean("dock_cockpit_v2", true).apply()
+            return list
+        }
         return raw.split(",").filter { it.isNotBlank() }.toMutableList()
     }
 
