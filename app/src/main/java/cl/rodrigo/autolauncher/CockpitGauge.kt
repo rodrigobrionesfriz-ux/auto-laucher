@@ -72,8 +72,8 @@ class CockpitGauge @JvmOverloads constructor(
     private val colAccent = context.getColor(R.color.accent)
     private val colWarn = context.getColor(R.color.warn)
     private val colDanger = context.getColor(R.color.danger)
-    private val colDim = Color.parseColor("#5E6B7A")
-    private val colLabel = Color.parseColor("#9AA6B4")
+    private val colDim = Color.parseColor("#5F6369")
+    private val colLabel = Color.parseColor("#D2D6DB")
     private val colStatus = context.getColor(R.color.text_dim)
 
     private val pFace = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -205,15 +205,15 @@ class CockpitGauge @JvmOverloads constructor(
         r = min(w / 2f, h * 0.47f) - 4f
         cy = r + 6f
         pFace.shader = RadialGradient(cx, cy, r,
-            intArrayOf(Color.parseColor("#0E1622"), Color.parseColor("#080C12"), Color.parseColor("#05070A")),
+            intArrayOf(Color.parseColor("#1B1C1F"), Color.parseColor("#0B0B0C"), Color.parseColor("#000000")),
             floatArrayOf(0f, 0.7f, 1f), Shader.TileMode.CLAMP)
         pRing.shader = LinearGradient(0f, cy - r, 0f, cy + r,
-            intArrayOf(Color.parseColor("#7E8B9C"), Color.parseColor("#232B35"), Color.parseColor("#4A5565")),
+            intArrayOf(Color.parseColor("#A4A9B0"), Color.parseColor("#2A2C30"), Color.parseColor("#6B7078")),
             null, Shader.TileMode.CLAMP)
         pRing.strokeWidth = r * 0.025f
         val vy = cy + r * 0.28f
         pRoad.shader = LinearGradient(0f, vy, 0f, h.toFloat(),
-            Color.argb(0, 20, 28, 38), Color.argb(242, 30, 40, 52), Shader.TileMode.CLAMP)
+            Color.argb(0, 30, 31, 34), Color.argb(242, 40, 42, 46), Shader.TileMode.CLAMP)
         pBeam.shader = LinearGradient(0f, h - r * 0.45f, 0f, vy,
             Color.argb(77, 255, 243, 196), Color.argb(0, 255, 243, 196), Shader.TileMode.CLAMP)
     }
@@ -228,7 +228,7 @@ class CockpitGauge @JvmOverloads constructor(
 
     /** Anillo exterior de brújula: gira para que la dirección de avance quede arriba. */
     private fun drawCompass(canvas: Canvas) {
-        pLine.color = Color.parseColor("#2A3442"); pLine.strokeWidth = 1.5f
+        pLine.color = Color.parseColor("#34363A"); pLine.strokeWidth = 1.5f
         canvas.drawCircle(cx, cy, r * 0.875f, pLine)
         pText.typeface = tfBold
         pText.textSize = r * 0.085f
@@ -287,10 +287,10 @@ class CockpitGauge @JvmOverloads constructor(
         canvas.clipPath(path)
         pLine.strokeWidth = 1f
         for (k in 1..7) {
-            pLine.color = Color.argb(((0.05f + 0.02f * k) * 255).toInt(), 90, 140, 200)
+            pLine.color = Color.argb(((0.05f + 0.02f * k) * 255).toInt(), 150, 156, 164)
             canvas.drawCircle(cx, vy, r * 0.09f * k * k / 3.2f, pLine)
         }
-        pLine.color = Color.argb(18, 90, 140, 200)
+        pLine.color = Color.argb(18, 150, 156, 164)
         for (k in 0 until 24) {
             val a = k * Math.PI / 12
             canvas.drawLine(cx, vy, cx + cos(a).toFloat() * r, vy + sin(a).toFloat() * r, pLine)
@@ -304,7 +304,7 @@ class CockpitGauge @JvmOverloads constructor(
         path.moveTo(cx - bw, by); path.lineTo(cx - r * 0.02f, vy)
         path.lineTo(cx + r * 0.02f, vy); path.lineTo(cx + bw, by); path.close()
         canvas.drawPath(path, pRoad)
-        pLine.color = Color.argb(128, 62, 224, 180); pLine.strokeWidth = 1.5f
+        pLine.color = Color.argb(110, 200, 205, 212); pLine.strokeWidth = 1.5f
         canvas.drawLine(cx - bw, by, cx - r * 0.02f, vy, pLine)
         canvas.drawLine(cx + bw, by, cx + r * 0.02f, vy, pLine)
 
@@ -320,7 +320,7 @@ class CockpitGauge @JvmOverloads constructor(
         // Pista y arco de velocidad
         val ra = r * 0.81f
         arcRect.set(cx - ra, cy - ra, cx + ra, cy + ra)
-        pArc.color = Color.parseColor("#1A222D"); pArc.strokeWidth = r * 0.035f
+        pArc.color = Color.parseColor("#232427"); pArc.strokeWidth = r * 0.035f
         canvas.drawArc(arcRect, 135f, 270f, false, pArc)
         val sw = 270f * shown / maxSpeed
         if (sw > 0.5f) {
@@ -331,8 +331,8 @@ class CockpitGauge @JvmOverloads constructor(
         }
 
         // Marcas y números
-        pText.typeface = tfNormal
-        pText.textSize = r * 0.062f
+        pText.typeface = tfBold
+        pText.textSize = r * 0.088f
         var v = 0
         while (v <= maxSpeed) {
             val major = v % 20 == 0
@@ -344,8 +344,8 @@ class CockpitGauge @JvmOverloads constructor(
             canvas.drawLine(cx + r1 * ca, cy + r1 * sa, cx + r2 * ca, cy + r2 * sa, pTick)
             if (major) {
                 pText.color = if (v > limit) colDanger else colLabel
-                val ly = cy + r * 0.61f * sa - (pText.descent() + pText.ascent()) / 2
-                canvas.drawText(v.toString(), cx + r * 0.61f * ca, ly, pText)
+                val ly = cy + r * 0.585f * sa - (pText.descent() + pText.ascent()) / 2
+                canvas.drawText(v.toString(), cx + r * 0.585f * ca, ly, pText)
             }
             v += 10
         }
