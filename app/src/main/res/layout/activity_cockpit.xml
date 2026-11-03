@@ -150,8 +150,8 @@
 
                 <cl.rodrigo.autolauncher.CircleFrame
                     android:id="@+id/musicInfo"
-                    android:layout_width="170dp"
-                    android:layout_height="170dp"
+                    android:layout_width="214dp"
+                    android:layout_height="214dp"
                     android:background="@drawable/bg_art_round"
                     android:foreground="@drawable/bg_round">
 
@@ -201,7 +201,7 @@
                     android:id="@+id/musicSource"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="18dp"
                     android:drawableStart="@drawable/ic_music"
                     android:drawablePadding="4dp"
                     android:drawableTint="@color/accent"
@@ -221,7 +221,8 @@
                     android:singleLine="true"
                     android:text="Sin reproducción"
                     android:textColor="@color/text"
-                    android:textSize="22sp"
+                    android:layout_marginTop="2dp"
+                    android:textSize="23sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -234,92 +235,6 @@
                     android:textColor="@color/text_dim"
                     android:textSize="16sp" />
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <!-- Odómetro y viaje -->
-                <LinearLayout
-                    android:id="@+id/odoBox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="14dp"
-                    android:background="@drawable/bg_odo"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="12dp"
-                    android:paddingTop="6dp"
-                    android:paddingEnd="4dp"
-                    android:paddingBottom="6dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="58dp"
-                                android:layout_height="wrap_content"
-                                android:text="ODO"
-                                android:textColor="@color/text_dim"
-                                android:textSize="12sp" />
-
-                            <TextView
-                                android:id="@+id/odoTotal"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:maxLines="1"
-                                android:text="--"
-                                android:textColor="@color/text"
-                                android:textSize="17sp" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="58dp"
-                                android:layout_height="wrap_content"
-                                android:text="VIAJE"
-                                android:textColor="@color/text_dim"
-                                android:textSize="12sp" />
-
-                            <TextView
-                                android:id="@+id/odoTrip"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:maxLines="1"
-                                android:text="0,0 km"
-                                android:textColor="@color/accent"
-                                android:textSize="17sp" />
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <ImageButton
-                        android:id="@+id/btnTripReset"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:background="@drawable/bg_round"
-                        android:contentDescription="Reiniciar viaje"
-                        android:padding="12dp"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_reset"
-                        android:tint="@color/text" />
-                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
@@ -424,33 +339,89 @@
                     android:tint="@color/text" />
             </LinearLayout>
 
-            <FrameLayout
-                android:id="@+id/logoRight"
+        <LinearLayout
+            android:id="@+id/odoBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="0.29"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="30dp"
+            android:background="@drawable/bg_odo"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="4dp"
+            android:paddingBottom="6dp">
+
+            <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="0.29"
-                android:layout_marginStart="20dp"
-                android:layout_marginEnd="30dp"
-                android:background="@drawable/bg_plain">
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-                <ImageView
-                    android:id="@+id/logoRightImg"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:padding="8dp"
-                    android:scaleType="fitCenter" />
-
-                <TextView
-                    android:id="@+id/logoRightText"
-                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:letterSpacing="0.2"
-                    android:maxLines="1"
-                    android:textColor="#9AA6B4"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </FrameLayout>
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="58dp"
+                        android:layout_height="wrap_content"
+                        android:text="ODO"
+                        android:textColor="@color/text_dim"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/odoTotal"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:maxLines="1"
+                        android:text="--"
+                        android:textColor="@color/text"
+                        android:textSize="17sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="58dp"
+                        android:layout_height="wrap_content"
+                        android:text="VIAJE"
+                        android:textColor="@color/text_dim"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/odoTrip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:maxLines="1"
+                        android:text="0,0 km"
+                        android:textColor="@color/accent"
+                        android:textSize="17sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btnTripReset"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_round"
+                android:contentDescription="Reiniciar viaje"
+                android:padding="12dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_reset"
+                android:tint="@color/text" />
+        </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>
