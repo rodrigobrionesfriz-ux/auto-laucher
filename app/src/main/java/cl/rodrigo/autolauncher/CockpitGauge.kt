@@ -82,6 +82,10 @@ class CockpitGauge @JvmOverloads constructor(
     private val pFill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pRoad = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pBeam = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val pBand = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val pInner = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val colBand = Color.parseColor("#7FCFA8")
+    private val colBandHi = Color.parseColor("#A6E8C6")
     private val pArc = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
     private val pTick = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND }
     private val pText = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
@@ -269,6 +273,9 @@ class CockpitGauge @JvmOverloads constructor(
             intArrayOf(Color.parseColor("#A4A9B0"), Color.parseColor("#2A2C30"), Color.parseColor("#6B7078")),
             null, Shader.TileMode.CLAMP)
         pRing.strokeWidth = r * 0.025f
+        pInner.shader = RadialGradient(cx, cy - r * 0.2f, r * 0.75f,
+            intArrayOf(Color.parseColor("#34363A"), Color.parseColor("#222326"), Color.parseColor("#151618")),
+            floatArrayOf(0f, 0.6f, 1f), Shader.TileMode.CLAMP)
         val vy = cy + r * 0.28f
         pRoad.shader = LinearGradient(0f, vy, 0f, h.toFloat(),
             Color.argb(0, 30, 31, 34), Color.argb(242, 40, 42, 46), Shader.TileMode.CLAMP)
@@ -338,22 +345,9 @@ class CockpitGauge @JvmOverloads constructor(
         canvas.drawCircle(cx, cy, r * 0.988f, pRing)
         drawCompass(canvas)
 
-        // Túnel
+        // Cara interior gris oscura (estilo tablero)
+        canvas.drawCircle(cx, cy, r * 0.705f, pInner)
         val vy = cy + r * 0.28f
-        canvas.save()
-        path.reset(); path.addCircle(cx, cy, r * 0.54f, Path.Direction.CW)
-        canvas.clipPath(path)
-        pLine.strokeWidth = 1f
-        for (k in 1..7) {
-            pLine.color = Color.argb(((0.05f + 0.02f * k) * 255).toInt(), 150, 156, 164)
-            canvas.drawCircle(cx, vy, r * 0.09f * k * k / 3.2f, pLine)
-        }
-        pLine.color = Color.argb(18, 150, 156, 164)
-        for (k in 0 until 24) {
-            val a = k * Math.PI / 12
-            canvas.drawLine(cx, vy, cx + cos(a).toFloat() * r, vy + sin(a).toFloat() * r, pLine)
-        }
-        canvas.restore()
 
         // Camino
         val bw = r * 0.72f
@@ -362,7 +356,7 @@ class CockpitGauge @JvmOverloads constructor(
         path.moveTo(cx - bw, by); path.lineTo(cx - r * 0.02f, vy)
         path.lineTo(cx + r * 0.02f, vy); path.lineTo(cx + bw, by); path.close()
         canvas.drawPath(path, pRoad)
-        pLine.color = Color.argb(110, 200, 205, 212); pLine.strokeWidth = 1.5f
+        pLine.color = Color.argb(90, 200, 205, 212); pLine.strokeWidth = 1.5f
         canvas.drawLine(cx - bw, by, cx - r * 0.02f, vy, pLine)
         canvas.drawLine(cx + bw, by, cx + r * 0.02f, vy, pLine)
 
@@ -375,52 +369,70 @@ class CockpitGauge @JvmOverloads constructor(
             canvas.drawPath(path, pBeam)
         }
 
-        // Pista y arco de velocidad
-        val ra = r * 0.81f
-        arcRect.set(cx - ra, cy - ra, cx + ra, cy + ra)
-        pArc.color = Color.parseColor("#232427"); pArc.strokeWidth = r * 0.035f
-        canvas.drawArc(arcRect, 135f, 270f, false, pArc)
+        // Banda ancha iluminada color menta
+        val rb = r * 0.78f
+        arcRect.set(cx - rb, cy - rb, cx + rb, cy + rb)
+        pBand.strokeWidth = r * 0.15f
+        pBand.color = colBand
+        canvas.drawArc(arcRect, 135f, 270f, false, pBand)
+        pBand.strokeWidth = r * 0.09f
+        pBand.color = colBandHi
+        canvas.drawArc(arcRect, 135f, 270f, false, pBand)
+        // tramo recorrido: un poco más brillante
         val sw = 270f * shown / maxSpeed
         if (sw > 0.5f) {
-            pArc.color = col; pArc.alpha = 51; pArc.strokeWidth = r * 0.085f
-            canvas.drawArc(arcRect, 135f, sw, false, pArc)
-            pArc.alpha = 255; pArc.strokeWidth = r * 0.035f
-            canvas.drawArc(arcRect, 135f, sw, false, pArc)
+            pBand.strokeWidth = r * 0.15f
+            pBand.color = Color.argb(70, 255, 255, 255)
+            canvas.drawArc(arcRect, 135f, sw, false, pBand)
         }
+        // bordes de la banda
+        pLine.color = Color.parseColor("#0C2219"); pLine.strokeWidth = r * 0.008f
+        canvas.drawArc(RectF(cx - r * 0.705f, cy - r * 0.705f, cx + r * 0.705f, cy + r * 0.705f), 135f, 270f, false, pLine)
+        canvas.drawArc(RectF(cx - r * 0.855f, cy - r * 0.855f, cx + r * 0.855f, cy + r * 0.855f), 135f, 270f, false, pLine)
 
-        // Marcas y números
+        // Marcas blancas dentro de la banda y números
         pText.typeface = tfBold
-        pText.textSize = r * 0.088f
+        pText.textSize = r * 0.095f
+        pText.color = colText
+        pTick.strokeCap = Paint.Cap.BUTT
         var v = 0
         while (v <= maxSpeed) {
             val major = v % 20 == 0
             val a = Math.toRadians(ang(v.toFloat()).toDouble())
             val ca = cos(a).toFloat(); val sa = sin(a).toFloat()
-            val r1 = r * 0.765f; val r2 = if (major) r * 0.69f else r * 0.725f
-            pTick.color = if (v <= shown) col else if (major) colText else colDim
-            pTick.strokeWidth = if (major) r * 0.016f else r * 0.009f
+            val r1 = r * 0.84f; val r2 = if (major) r * 0.722f else r * 0.765f
+            val tw = if (major) r * 0.034f else r * 0.022f
+            pTick.color = Color.parseColor("#123326"); pTick.strokeWidth = tw + r * 0.012f
+            canvas.drawLine(cx + (r1 + r * 0.004f) * ca, cy + (r1 + r * 0.004f) * sa,
+                cx + (r2 - r * 0.004f) * ca, cy + (r2 - r * 0.004f) * sa, pTick)
+            pTick.color = Color.WHITE; pTick.strokeWidth = tw
             canvas.drawLine(cx + r1 * ca, cy + r1 * sa, cx + r2 * ca, cy + r2 * sa, pTick)
             if (major) {
-                pText.color = if (v > limit) colDanger else colLabel
-                val ly = cy + r * 0.585f * sa - (pText.descent() + pText.ascent()) / 2
-                canvas.drawText(v.toString(), cx + r * 0.585f * ca, ly, pText)
+                val ly = cy + r * 0.6f * sa - (pText.descent() + pText.ascent()) / 2
+                canvas.drawText(v.toString(), cx + r * 0.6f * ca, ly, pText)
             }
             v += 10
         }
 
-        // Aguja
+        // Aguja roja con brillo
         val a = Math.toRadians(ang(shown).toDouble())
         val ca = cos(a).toFloat(); val sa = sin(a).toFloat()
         val px = -sa; val py = ca
-        val ri = r * 0.55f; val ro = r * 0.83f; val wi = r * 0.028f; val wo = r * 0.007f
-        path.reset()
-        path.moveTo(cx + ri * ca + wi * px, cy + ri * sa + wi * py)
-        path.lineTo(cx + ro * ca + wo * px, cy + ro * sa + wo * py)
-        path.lineTo(cx + ro * ca - wo * px, cy + ro * sa - wo * py)
-        path.lineTo(cx + ri * ca - wi * px, cy + ri * sa - wi * py)
-        path.close()
-        pFill.color = Color.parseColor("#FF5A3D")
-        canvas.drawPath(path, pFill)
+        fun needle(ri: Float, ro: Float, wi: Float, wo: Float) {
+            path.reset()
+            path.moveTo(cx + ri * ca + wi * px, cy + ri * sa + wi * py)
+            path.lineTo(cx + ro * ca + wo * px, cy + ro * sa + wo * py)
+            path.lineTo(cx + ro * ca - wo * px, cy + ro * sa - wo * py)
+            path.lineTo(cx + ri * ca - wi * px, cy + ri * sa - wi * py)
+            path.close()
+            canvas.drawPath(path, pFill)
+        }
+        pFill.color = Color.argb(60, 255, 40, 20)
+        needle(r * 0.40f, r * 0.88f, r * 0.06f, r * 0.025f)
+        pFill.color = Color.parseColor("#FF2A14")
+        needle(r * 0.42f, r * 0.86f, r * 0.03f, r * 0.008f)
+        pFill.color = Color.parseColor("#FF7A66")
+        needle(r * 0.45f, r * 0.84f, r * 0.008f, r * 0.003f)
 
         // Textos
         pText.typeface = tfNormal
@@ -430,7 +442,7 @@ class CockpitGauge @JvmOverloads constructor(
         pText.color = speedColor(shown, colText); pText.textSize = r * 0.33f
         canvas.drawText(shown.roundToInt().toString(), cx, cy + r * 0.07f, pText)
         pText.typeface = tfNormal
-        pText.color = colAccent; pText.textSize = r * 0.06f
+        pText.color = colText; pText.textSize = r * 0.065f
         canvas.drawText("km/h", cx, cy + r * 0.18f, pText)
         pText.typeface = tfPlain
         pText.color = colStatus; pText.textSize = r * 0.055f
