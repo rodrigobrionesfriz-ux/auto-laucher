@@ -95,7 +95,6 @@ class MainActivity : Activity() {
         findViewById<View>(R.id.btnMusic)?.setOnClickListener { Apps.open(this, Apps.musicSlot) {} }
         findViewById<View>(R.id.btnMusic)?.setOnLongClickListener { Apps.pick(this, Apps.musicSlot) {}; true }
         setupLogo("left", R.id.logoLeft, R.id.logoLeftImg, R.id.logoLeftText)
-        setupLogo("right", R.id.logoRight, R.id.logoRightImg, R.id.logoRightText)
         setupOdometer()
         OdoService.start(this)
         weatherTemp = findViewById(R.id.weatherTemp)
