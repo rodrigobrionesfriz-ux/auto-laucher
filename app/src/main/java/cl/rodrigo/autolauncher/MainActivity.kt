@@ -23,6 +23,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import kotlin.math.roundToInt
+import java.util.Locale
 
 class MainActivity : Activity() {
 
@@ -423,8 +424,19 @@ class MainActivity : Activity() {
         findViewById<View>(R.id.odoBox)?.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Odómetro")
-                .setItems(arrayOf("Ajustar kilometraje del auto", "Reiniciar viaje")) { _, w ->
-                    if (w == 0) askOdometer() else confirmTripReset()
+                .setItems(arrayOf("Ajustar kilometraje del auto", "Reiniciar viaje",
+                    "Calibrar con este viaje", "Corrección actual: %.2f%%".format(Locale.US, (Odo.factor - 1) * 100))) { _, w ->
+                    when (w) {
+                        0 -> askOdometer()
+                        1 -> confirmTripReset()
+                        2 -> askCalibration()
+                        3 -> AlertDialog.Builder(this)
+                            .setTitle("Corrección del odómetro")
+                            .setMessage("Lo que mide el GPS se multiplica por %.4f.\n\nPor defecto: 223 km del auto = 231 km del GPS.".format(Locale.US, Odo.factor))
+                            .setPositiveButton("OK", null)
+                            .setNeutralButton("Volver al valor por defecto") { _, _ -> Odo.resetFactor(this) }
+                            .show()
+                    }
                 }.show()
         }
         refreshOdometer()
@@ -442,6 +454,30 @@ class MainActivity : Activity() {
             .setTitle("Reiniciar viaje")
             .setMessage("El contador de viaje (${Odo.fmtTrip(Odo.tripKm(this))}) vuelve a cero. El odómetro total no cambia.")
             .setPositiveButton("Reiniciar") { _, _ -> Odo.resetTrip(this); refreshOdometer() }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun askCalibration() {
+        val input = android.widget.EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+            hint = "Ej: 223"
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Calibrar odómetro")
+            .setMessage("El viaje del launcher marca ${Odo.fmtTrip(Odo.tripKm(this))}. " +
+                "¿Cuántos km recorriste según el auto en este mismo viaje?\n\n" +
+                "Tip: reinicia el viaje y el parcial del auto al mismo tiempo, maneja al menos 50 km y luego calibra.")
+            .setView(input)
+            .setPositiveButton("Calibrar") { _, _ ->
+                val km = input.text.toString().replace(',', '.').toDoubleOrNull()
+                if (km != null && Odo.calibrate(this, km)) {
+                    Toast.makeText(this, "Listo, corrección ajustada", Toast.LENGTH_SHORT).show()
+                    refreshOdometer()
+                } else {
+                    Toast.makeText(this, "Se necesita un viaje de al menos 5 km", Toast.LENGTH_LONG).show()
+                }
+            }
             .setNegativeButton("Cancelar", null)
             .show()
     }

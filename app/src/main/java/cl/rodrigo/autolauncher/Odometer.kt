@@ -31,6 +31,11 @@ object Odo {
     var isSet = false
         private set
 
+    /** Corrección: el GPS medía 231 km cuando el auto marcaba 223 km. */
+    const val DEFAULT_FACTOR = 223.0 / 231.0
+    var factor = DEFAULT_FACTOR
+        private set
+
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     @Synchronized
@@ -40,6 +45,7 @@ object Odo {
         totalM = p.getLong("total_m", 0).toDouble()
         tripM = p.getLong("trip_m", 0).toDouble()
         isSet = p.getBoolean("set", false)
+        factor = p.getFloat("factor", DEFAULT_FACTOR.toFloat()).toDouble()
         loaded = true
     }
 
@@ -60,6 +66,29 @@ object Odo {
         isSet = true
         prefs(ctx).edit().putBoolean("set", true).apply()
         save(ctx)
+    }
+
+    /**
+     * Calibra con un viaje: el usuario dice cuántos km marcó el auto para el viaje actual.
+     * El nuevo factor corrige la diferencia y el viaje se ajusta a ese valor.
+     */
+    @Synchronized
+    fun calibrate(ctx: Context, carTripKm: Double): Boolean {
+        load(ctx)
+        if (tripM < 5000 || carTripKm <= 0) return false   // se necesita un viaje de al menos 5 km
+        val newFactor = (factor * carTripKm * 1000.0 / tripM).coerceIn(0.8, 1.2)
+        factor = newFactor
+        tripM = carTripKm * 1000.0
+        prefs(ctx).edit().putFloat("factor", factor.toFloat()).apply()
+        save(ctx)
+        return true
+    }
+
+    @Synchronized
+    fun resetFactor(ctx: Context) {
+        load(ctx)
+        factor = DEFAULT_FACTOR
+        prefs(ctx).edit().putFloat("factor", factor.toFloat()).apply()
     }
 
     @Synchronized
@@ -86,9 +115,10 @@ object Odo {
         val moving = (loc.hasSpeed() && loc.speed >= 1.0f) || d / dt >= 1.5
         if (!moving) return                                    // detenido: deriva del GPS
         if (d / dt > 70) return                                // salto imposible (> 250 km/h)
-        totalM += d
-        tripM += d
-        unsavedM += d
+        val dc = d * factor
+        totalM += dc
+        tripM += dc
+        unsavedM += dc
         if (unsavedM >= 100 || now - lastSaveAt > 60_000) save(ctx)
     }
 
