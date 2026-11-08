@@ -102,14 +102,17 @@ class MainActivity : Activity() {
         vuBar = findViewById<LedBar>(R.id.vuBar)?.apply { vu = true }
         audio.mode = Prefs.vuMode(this)
         speedBar?.limit = Prefs.speedLimit(this)
-        (gaugeView as? CockpitGauge)?.onShown = { speedBar?.level = it }
+        val tach = findViewById<TachView>(R.id.tach)
+        (gaugeView as? CockpitGauge)?.onShown = {
+            speedBar?.level = it
+            tach?.setSpeed(it * 220f)
+        }
         findViewById<View>(R.id.btnPhone)?.setOnClickListener {
             Apps.slotFor("phone")?.let { Apps.open(this, it) {} }
         }
         if (cockpit) findViewById<TextView>(R.id.clock).typeface = Fonts.bold(this)
         findViewById<View>(R.id.btnMusic)?.setOnClickListener { Apps.open(this, Apps.musicSlot) {} }
         findViewById<View>(R.id.btnMusic)?.setOnLongClickListener { Apps.pick(this, Apps.musicSlot) {}; true }
-        setupLogo("left", R.id.logoLeft, R.id.logoLeftImg, R.id.logoLeftText)
         setupOdometer()
         OdoService.start(this)
         weatherTemp = findViewById(R.id.weatherTemp)
