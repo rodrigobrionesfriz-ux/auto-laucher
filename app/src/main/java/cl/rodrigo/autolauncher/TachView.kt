@@ -119,7 +119,7 @@ class TachView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         pBox.color = Color.parseColor("#141517")
         canvas.drawRoundRect(rect, 8 * dp, 8 * dp, pBox)
         canvas.drawRoundRect(rect, 8 * dp, 8 * dp, pStroke)
-        pText.typeface = medium; pText.textSize = 11 * dp; pText.color = Color.parseColor("#3EE0B4")
+        pText.typeface = android.graphics.Typeface.DEFAULT_BOLD; pText.textSize = 12 * dp; pText.color = Color.parseColor("#3EE0B4")
         canvas.drawText("D", rect.centerX(), rect.top + 16 * dp, pText)
         pText.typeface = bold; pText.textSize = 28 * dp; pText.color = Color.parseColor("#F2F5F8")
         canvas.drawText(gear.toString(), rect.centerX(), rect.bottom - 9 * dp, pText)
