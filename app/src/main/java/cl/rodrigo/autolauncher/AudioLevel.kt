@@ -1,19 +1,24 @@
 package cl.rodrigo.autolauncher
 
 import android.media.audiofx.Visualizer
-import kotlin.math.max
+import kotlin.math.abs
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /**
  * Nivel de la música que está sonando (0..1).
- * Usa el Visualizer de Android sobre la salida general; si la radio no lo entrega
- * (audio Bluetooth por hardware), simula un ritmo mientras haya música reproduciéndose.
+ * Lee la forma de onda de la salida general con el Visualizer de Android. Si la radio no entrega
+ * audio real (lectura plana o fija, típico cuando el Bluetooth va por hardware), simula un ritmo
+ * mientras haya música reproduciéndose.
  */
 class AudioLevel {
     private var vis: Visualizer? = null
+    private var buf = ByteArray(0)
     private var smooth = 0f
-    private var silentSince = 0L
     private var t = 0.0
+    private val history = FloatArray(60)
+    private var hi = 0
+    private var filled = 0
     var simulated = false
         private set
 
@@ -22,10 +27,10 @@ class AudioLevel {
         try {
             vis = Visualizer(0).apply {
                 enabled = false
-                captureSize = Visualizer.getCaptureSizeRange()[0]
-                measurementMode = Visualizer.MEASUREMENT_MODE_PEAK_RMS
+                captureSize = Visualizer.getCaptureSizeRange()[0].coerceAtLeast(128)
                 enabled = true
             }
+            buf = ByteArray(vis!!.captureSize)
         } catch (e: Throwable) {
             vis = null
         }
@@ -34,34 +39,57 @@ class AudioLevel {
     fun stop() {
         try { vis?.release() } catch (e: Throwable) {}
         vis = null
+        filled = 0
+    }
+
+    private fun readReal(): Float? {
+        val v = vis ?: return null
+        return try {
+            if (v.getWaveForm(buf) != Visualizer.SUCCESS) return null
+            // muestras de 8 bits sin signo, centro en 128
+            var sum = 0.0
+            for (b in buf) {
+                val s = ((b.toInt() and 0xFF) - 128) / 128.0
+                sum += s * s
+            }
+            (sqrt(sum / buf.size) * 3.2).toFloat().coerceIn(0f, 1f)
+        } catch (e: Throwable) {
+            null
+        }
+    }
+
+    /** ¿Las últimas ~2 s de lectura son planas (sin variación)? */
+    private fun flat(): Boolean {
+        if (filled < history.size) return false
+        var mean = 0f
+        for (x in history) mean += x
+        mean /= history.size
+        var dev = 0f
+        for (x in history) dev += abs(x - mean)
+        dev /= history.size
+        return dev < 0.012f
     }
 
     /** Llamar ~30 veces por segundo. playing = hay música sonando según el reproductor. */
     fun read(playing: Boolean): Float {
-        val now = System.currentTimeMillis()
-        var raw = 0f
-        val v = vis
-        if (v != null) {
-            try {
-                val m = Visualizer.MeasurementPeakRms()
-                if (v.getMeasurementPeakRms(m) == Visualizer.SUCCESS) {
-                    // rms en milibeles: -9600 (silencio) … 0 (máximo)
-                    raw = ((m.mRms + 4200f) / 4200f).coerceIn(0f, 1f)
-                    val peak = ((m.mPeak + 3000f) / 3000f).coerceIn(0f, 1f)
-                    raw = max(raw, peak * 0.85f)
-                }
-            } catch (e: Throwable) {}
+        val real = readReal()
+        if (real != null) {
+            history[hi] = real; hi = (hi + 1) % history.size
+            if (filled < history.size) filled++
         }
-        if (raw > 0.02f) silentSince = 0L else if (silentSince == 0L) silentSince = now
-        simulated = playing && (v == null || (silentSince != 0L && now - silentSince > 2500))
-        if (simulated) {
-            // ritmo simulado ~ 118 bpm con variación
-            t += 0.033
-            val beat = (t * 118 / 60.0) % 1.0
-            val kick = Math.exp(-beat * 6.0)
-            val wobble = 0.5 + 0.25 * sin(t * 7.3) + 0.15 * sin(t * 13.1)
-            raw = (0.25 + 0.55 * kick + 0.25 * wobble * Math.random()).toFloat().coerceIn(0f, 1f)
-        } else if (!playing && v == null) raw = 0f
+        simulated = playing && (real == null || flat())
+        val raw: Float = when {
+            simulated -> {
+                // ritmo simulado ~118 bpm con variación
+                t += 0.033
+                val beat = (t * 118 / 60.0) % 1.0
+                val kick = Math.exp(-beat * 6.0)
+                val wobble = 0.5 + 0.25 * sin(t * 7.3) + 0.15 * sin(t * 13.1)
+                (0.22 + 0.55 * kick + 0.25 * wobble * Math.random()).toFloat().coerceIn(0f, 1f)
+            }
+            !playing && (real == null || flat()) -> 0f
+            else -> real ?: 0f
+        }
         // subida rápida, bajada suave
         smooth = if (raw > smooth) smooth + (raw - smooth) * 0.6f else smooth + (raw - smooth) * 0.15f
         return smooth
