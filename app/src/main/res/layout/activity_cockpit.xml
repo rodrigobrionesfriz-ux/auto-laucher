@@ -9,6 +9,26 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Barra LED de velocidad (izquierda) -->
+    <cl.rodrigo.autolauncher.LedBar
+        android:id="@+id/speedBar"
+        android:layout_width="8dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:layout_marginStart="6dp"
+        android:layout_marginTop="110dp"
+        android:layout_marginBottom="110dp" />
+
+    <!-- Vúmetro de la música (derecha) -->
+    <cl.rodrigo.autolauncher.LedBar
+        android:id="@+id/vuBar"
+        android:layout_width="8dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:layout_marginEnd="6dp"
+        android:layout_marginTop="110dp"
+        android:layout_marginBottom="110dp" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"

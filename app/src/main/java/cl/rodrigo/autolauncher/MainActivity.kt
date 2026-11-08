@@ -31,6 +31,16 @@ class MainActivity : Activity() {
 
     private lateinit var gauge: Gauge
     private var frame: CockpitFrame? = null
+    private var speedBar: LedBar? = null
+    private var vuBar: LedBar? = null
+    private val audio = AudioLevel()
+    private var musicPlaying = false
+    private val vuTicker = object : Runnable {
+        override fun run() {
+            vuBar?.level = audio.read(musicPlaying)
+            handler.postDelayed(this, 33)
+        }
+    }
     private var cockpit = false
     private lateinit var weatherTemp: TextView
     private lateinit var weatherDesc: TextView
@@ -88,7 +98,10 @@ class MainActivity : Activity() {
         if (cockpit) loadCarPhoto()
         logoRefreshers["car"] = { setCarMode("custom") }
         frame = findViewById(R.id.frame)
-        (gaugeView as? CockpitGauge)?.onShown = { frame?.level = it }
+        speedBar = findViewById(R.id.speedBar)
+        vuBar = findViewById<LedBar>(R.id.vuBar)?.apply { vu = true }
+        speedBar?.limit = Prefs.speedLimit(this)
+        (gaugeView as? CockpitGauge)?.onShown = { speedBar?.level = it }
         findViewById<View>(R.id.btnPhone)?.setOnClickListener {
             Apps.slotFor("phone")?.let { Apps.open(this, it) {} }
         }
@@ -175,6 +188,11 @@ class MainActivity : Activity() {
         handler.removeCallbacks(ticker)
         handler.post(ticker)
         Updater.checkInBackground(this)
+        if (vuBar != null) {
+            if (hasAudioPermission()) audio.start()
+            handler.removeCallbacks(vuTicker)
+            handler.post(vuTicker)
+        }
     }
 
     override fun onDestroy() {
@@ -185,6 +203,8 @@ class MainActivity : Activity() {
     override fun onPause() {
         super.onPause()
         handler.removeCallbacks(ticker)
+        handler.removeCallbacks(vuTicker)
+        audio.stop()
         stopGps()
     }
 
@@ -320,6 +340,7 @@ class MainActivity : Activity() {
                         .setItems(limits.map { "$it km/h" }.toTypedArray()) { _, w ->
                             Prefs.setSpeedLimit(this, limits[w])
                             gauge.limit = limits[w]
+                            speedBar?.limit = limits[w]
                         }.show()
                 }
                 2 -> AlertDialog.Builder(this)
@@ -628,17 +649,24 @@ class MainActivity : Activity() {
         Build.VERSION.SDK_INT < 23 ||
             checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
+    private fun hasAudioPermission(): Boolean =
+        Build.VERSION.SDK_INT < 23 ||
+            checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
     private fun askLocationPermission() {
-        if (Build.VERSION.SDK_INT >= 23 && !hasLocationPermission()) {
-            requestPermissions(arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION), 1)
+        if (Build.VERSION.SDK_INT < 23) return
+        val need = ArrayList<String>()
+        if (!hasLocationPermission()) {
+            need.add(Manifest.permission.ACCESS_FINE_LOCATION); need.add(Manifest.permission.ACCESS_COARSE_LOCATION)
         }
+        if (cockpit && !hasAudioPermission()) need.add(Manifest.permission.RECORD_AUDIO)
+        if (need.isNotEmpty()) requestPermissions(need.toTypedArray(), 1)
     }
 
     override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, results: IntArray) {
         super.onRequestPermissionsResult(code, perms, results)
         if (hasLocationPermission()) { startGps(); OdoService.start(this) }
+        if (vuBar != null && hasAudioPermission()) audio.start()
     }
 
     private fun startGps() {
@@ -763,6 +791,7 @@ class MainActivity : Activity() {
     private fun refreshMusic() {
         val np = Music.nowPlaying(this)
         if (np == null || np.title.isNullOrBlank()) {
+            musicPlaying = false
             musicSource.text = np?.source ?: "Música"
             if (Music.hasAccess(this)) {
                 musicTitle.text = "Sin reproducción"
@@ -780,6 +809,7 @@ class MainActivity : Activity() {
         musicTitle.text = np.title
         musicArtist.text = listOfNotNull(np.artist, np.album).filter { it.isNotBlank() }.joinToString(" · ")
         btnPlay.setImageResource(if (np.playing) R.drawable.ic_pause else R.drawable.ic_play)
+        musicPlaying = np.playing
         showTimes(np.positionMs, np.durationMs)
         showArt(np.art ?: AlbumArt.get(np.artist, np.title!!) {
             runOnUiThread { refreshMusic() }

@@ -91,22 +91,6 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
         path.moveTo(x(pw * 0.78f), h * 0.10f); path.lineTo(x(pw), h * 0.20f)
         path.lineTo(x(pw), h * 0.80f); path.lineTo(x(pw * 0.78f), h * 0.88f)
         canvas.drawPath(path, pGlow)
-
-        // Barra LED
-        val top = h * 0.2f; val bot = h * 0.8f
-        val seg = (bot - top) / SEGMENTS
-        val lit = (level * SEGMENTS).roundToInt()
-        val x0 = if (left) 6f else w - 12f
-        for (i in 0 until SEGMENTS) {
-            val y = bot - (i + 1) * seg + 2
-            val f = i.toFloat() / SEGMENTS
-            pSeg.color = if (i < lit) when {
-                f < 0.55f -> Color.parseColor("#2BD96B")
-                f < 0.8f -> Color.parseColor("#F5D33A")
-                else -> Color.parseColor("#FF4A3D")
-            } else Color.argb(18, 255, 255, 255)
-            canvas.drawRect(x0, y, x0 + 6f, y + seg - 4f, pSeg)
-        }
     }
 
     companion object { private const val SEGMENTS = 16 }
