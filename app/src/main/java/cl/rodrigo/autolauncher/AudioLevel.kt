@@ -46,6 +46,9 @@ class AudioLevel {
         val v = vis ?: return null
         return try {
             if (v.getWaveForm(buf) != Visualizer.SUCCESS) return null
+            // Buffer vacío o todo igual (la radio no entrega audio): lectura inválida
+            val first = buf[0]
+            if (buf.all { it == first }) return null
             // muestras de 8 bits sin signo, centro en 128
             var sum = 0.0
             for (b in buf) {
@@ -70,9 +73,13 @@ class AudioLevel {
         return dev < 0.012f
     }
 
+    /** "auto", "sim" (siempre simulado) u "off" (apagado). */
+    var mode = "auto"
+
     /** Llamar ~30 veces por segundo. playing = hay música sonando según el reproductor. */
     fun read(playing: Boolean): Float {
-        val real = readReal()
+        if (mode == "off") { smooth = 0f; return 0f }
+        val real = if (mode == "sim") null else readReal()
         if (real != null) {
             history[hi] = real; hi = (hi + 1) % history.size
             if (filled < history.size) filled++

@@ -28,6 +28,9 @@ object Prefs {
     fun logoText(ctx: Context, side: String): String = p(ctx).getString("logo_text_$side", "") ?: ""
     fun setLogoText(ctx: Context, side: String, v: String) = p(ctx).edit().putString("logo_text_$side", v).apply()
 
+    fun vuMode(ctx: Context): String = p(ctx).getString("vu_mode", "auto") ?: "auto"
+    fun setVuMode(ctx: Context, v: String) = p(ctx).edit().putString("vu_mode", v).apply()
+
     fun speedLimit(ctx: Context): Int = p(ctx).getInt("speed_limit", 100)
     fun setSpeedLimit(ctx: Context, v: Int) = p(ctx).edit().putInt("speed_limit", v).apply()
 }

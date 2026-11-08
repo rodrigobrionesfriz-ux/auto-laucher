@@ -100,6 +100,7 @@ class MainActivity : Activity() {
         frame = findViewById(R.id.frame)
         speedBar = findViewById(R.id.speedBar)
         vuBar = findViewById<LedBar>(R.id.vuBar)?.apply { vu = true }
+        audio.mode = Prefs.vuMode(this)
         speedBar?.limit = Prefs.speedLimit(this)
         (gaugeView as? CockpitGauge)?.onShown = { speedBar?.level = it }
         findViewById<View>(R.id.btnPhone)?.setOnClickListener {
@@ -325,6 +326,7 @@ class MainActivity : Activity() {
             "Luces del vehículo",
             "Buscar actualización (tienes ${Updater.currentName(this)})",
             "Diagnóstico",
+            "Vúmetro: " + when (Prefs.vuMode(this)) { "sim" -> "Ritmo simulado"; "off" -> "Apagado"; else -> "Automático" },
         )
         AlertDialog.Builder(this).setItems(items) { _, which ->
             when (which) {
@@ -350,6 +352,11 @@ class MainActivity : Activity() {
                 3 -> lightsMenu()
                 4 -> Updater.checkNow(this)
                 5 -> startActivity(Intent(this, DiagActivity::class.java))
+                6 -> AlertDialog.Builder(this)
+                    .setItems(arrayOf("Automático (audio real si la radio lo permite)", "Ritmo simulado", "Apagado")) { _, w ->
+                        val m = listOf("auto", "sim", "off")[w]
+                        Prefs.setVuMode(this, m); audio.mode = m
+                    }.show()
             }
         }.show()
     }
