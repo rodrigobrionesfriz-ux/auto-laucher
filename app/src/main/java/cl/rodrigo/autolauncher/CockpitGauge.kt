@@ -449,9 +449,11 @@ class CockpitGauge @JvmOverloads constructor(
         canvas.drawText(status, cx, cy + r * 0.28f, pText)
 
         // Camioneta (dibujo o foto propia)
-        val cw = r * 0.86f
         val photo = carPhoto
-        val ch = if (photo != null) cw * photo.height / photo.width.coerceAtLeast(1) else cw * 168f / 200f
+        // Ancho máximo 0.86r, pero si la imagen es alta se achica para no tapar los números del dial
+        val ratio = if (photo != null) photo.height.toFloat() / photo.width.coerceAtLeast(1) else 168f / 200f
+        val cw = minOf(r * 0.86f, r * 0.68f / ratio)
+        val ch = cw * ratio
         val l = (cx - cw / 2).toInt()
         val t = (h - ch - 2).toInt()
         if (photo != null) {
