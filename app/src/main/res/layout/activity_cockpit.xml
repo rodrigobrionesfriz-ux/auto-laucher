@@ -150,11 +150,38 @@
             </LinearLayout>
 
             <!-- Centro: velocímetro con la camioneta -->
-            <cl.rodrigo.autolauncher.CockpitGauge
-                android:id="@+id/gauge"
+            <FrameLayout
+                android:id="@+id/centerBox"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="0.42" />
+                android:layout_weight="0.42">
+
+                <cl.rodrigo.autolauncher.CockpitGauge
+                    android:id="@+id/gauge"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <!-- Mapa (se muestra en lugar del velocímetro) -->
+                <cl.rodrigo.autolauncher.CircleFrame
+                    android:id="@+id/mapBox"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:layout_gravity="center_horizontal"
+                    android:background="#0B0B0C"
+                    android:visibility="gone" />
+
+                <ImageButton
+                    android:id="@+id/btnMapToggle"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:layout_gravity="top|start"
+                    android:background="@drawable/bg_round"
+                    android:contentDescription="Mapa"
+                    android:padding="11dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_map"
+                    android:tint="@color/text" />
+            </FrameLayout>
 
             <!-- Derecha: reproductor -->
             <LinearLayout

@@ -32,6 +32,8 @@ class MainActivity : Activity() {
     private lateinit var gauge: Gauge
     private var frame: CockpitFrame? = null
     private var speedBar: LedBar? = null
+    private var mapPanel: MapPanel? = null
+    private var showMap = false
     private var vuBar: LedBar? = null
     private val audio = AudioLevel()
     private var musicPlaying = false
@@ -98,6 +100,7 @@ class MainActivity : Activity() {
         if (cockpit) loadCarPhoto()
         logoRefreshers["car"] = { setCarMode("custom") }
         frame = findViewById(R.id.frame)
+        setupMap(gaugeView as? CockpitGauge)
         speedBar = findViewById(R.id.speedBar)
         vuBar = findViewById<LedBar>(R.id.vuBar)?.apply { vu = true }
         audio.mode = Prefs.vuMode(this)
@@ -192,9 +195,11 @@ class MainActivity : Activity() {
         handler.removeCallbacks(ticker)
         handler.post(ticker)
         Updater.checkInBackground(this)
+        if (showMap) mapPanel?.resume()
         if (vuBar != null) {
             if (hasAudioPermission()) audio.start()
             handler.removeCallbacks(vuTicker)
+        mapPanel?.pause()
             handler.post(vuTicker)
         }
     }
@@ -438,6 +443,40 @@ class MainActivity : Activity() {
     }
 
     // ---------- Luces del vehículo ----------
+
+    // ---------- Mapa en lugar del velocímetro ----------
+
+    private fun setupMap(g: CockpitGauge?) {
+        val box = findViewById<CircleFrame>(R.id.mapBox) ?: return
+        val btn = findViewById<ImageButton>(R.id.btnMapToggle) ?: return
+        g ?: return
+        // El círculo del mapa calza exactamente con el dial
+        g.onSized = {
+            val d = (g.dialR * 2).toInt()
+            val lp = box.layoutParams as android.widget.FrameLayout.LayoutParams
+            lp.width = d; lp.height = d
+            lp.topMargin = (g.dialCy - g.dialR).toInt()
+            box.layoutParams = lp
+        }
+        showMap = getSharedPreferences("launcher", MODE_PRIVATE).getBoolean("show_map", false)
+        fun apply() {
+            if (showMap && mapPanel == null) {
+                mapPanel = try { MapPanel(this) } catch (e: Throwable) { null }
+                mapPanel?.let { box.addView(it, android.widget.FrameLayout.LayoutParams(-1, -1)) }
+                lastLocation?.let { mapPanel?.onLocation(it, 0) }
+            }
+            box.visibility = if (showMap) View.VISIBLE else View.GONE
+            g.visibility = if (showMap) View.INVISIBLE else View.VISIBLE
+            btn.setImageResource(if (showMap) R.drawable.ic_speedo else R.drawable.ic_map)
+            if (showMap) mapPanel?.resume() else mapPanel?.pause()
+        }
+        btn.setOnClickListener {
+            showMap = !showMap
+            getSharedPreferences("launcher", MODE_PRIVATE).edit().putBoolean("show_map", showMap).apply()
+            apply()
+        }
+        apply()
+    }
 
     // ---------- Odómetro ----------
 
@@ -726,6 +765,7 @@ class MainActivity : Activity() {
         lastLocation = loc
         val kmh = if (loc.hasSpeed()) (loc.speed * 3.6f).roundToInt() else 0
         gauge.setSpeed(if (kmh < 2) 0 else kmh)
+        mapPanel?.onLocation(loc, if (kmh < 2) 0 else kmh)
         if (loc.hasBearing() && kmh >= 3) {
             gauge.heading = cardinal(loc.bearing)
             gauge.setBearing(loc.bearing)

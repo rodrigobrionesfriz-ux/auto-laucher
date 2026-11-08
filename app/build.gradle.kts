@@ -39,3 +39,8 @@ android {
     kotlinOptions { jvmTarget = "17" }
     lint { abortOnError = false; checkReleaseBuilds = false }
 }
+
+dependencies {
+    // Mapa OpenStreetMap (sin cuenta de Google)
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
+}

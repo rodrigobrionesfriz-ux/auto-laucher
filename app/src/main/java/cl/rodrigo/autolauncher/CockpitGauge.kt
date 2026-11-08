@@ -106,6 +106,10 @@ class CockpitGauge @JvmOverloads constructor(
     private var cx = 0f
     private var cy = 0f
     private var r = 0f
+    /** Centro y radio del dial (para ubicar el mapa encima). */
+    val dialCy get() = cy
+    val dialR get() = r
+    var onSized: (() -> Unit)? = null
 
     init {
         post {
@@ -273,6 +277,7 @@ class CockpitGauge @JvmOverloads constructor(
             intArrayOf(Color.parseColor("#A4A9B0"), Color.parseColor("#2A2C30"), Color.parseColor("#6B7078")),
             null, Shader.TileMode.CLAMP)
         pRing.strokeWidth = r * 0.025f
+        post { onSized?.invoke() }
         pInner.shader = RadialGradient(cx, cy - r * 0.2f, r * 0.75f,
             intArrayOf(Color.parseColor("#34363A"), Color.parseColor("#222326"), Color.parseColor("#151618")),
             floatArrayOf(0f, 0.6f, 1f), Shader.TileMode.CLAMP)
