@@ -23,6 +23,16 @@ class MapPanel(ctx: Context) : FrameLayout(ctx) {
     private val speed: TextView
     private var lastZoom = 0.0
     private var hasFix = false
+    private var darkFilter: android.graphics.ColorFilter? = null
+
+    /** true = mapa oscuro (colores invertidos), false = colores normales para el día. */
+    fun setDark(dark: Boolean) {
+        val o = map.overlayManager.tilesOverlay
+        o.setColorFilter(if (dark) darkFilter else null)
+        o.loadingBackgroundColor = if (dark) Color.parseColor("#0B0B0C") else Color.parseColor("#E8E6E1")
+        o.loadingLineColor = if (dark) Color.parseColor("#1A1B1E") else Color.parseColor("#D5D3CE")
+        map.invalidate()
+    }
 
     init {
         val conf = Configuration.getInstance()
@@ -53,7 +63,8 @@ class MapPanel(ctx: Context) : FrameLayout(ctx) {
             0f, 0.9f, 0f, 0f, 4f,
             0f, 0f, 0.95f, 0f, 10f,
             0f, 0f, 0f, 1f, 0f)))
-        map.overlayManager.tilesOverlay.setColorFilter(android.graphics.ColorMatrixColorFilter(m))
+        darkFilter = android.graphics.ColorMatrixColorFilter(m)
+        map.overlayManager.tilesOverlay.setColorFilter(darkFilter)
         map.overlayManager.tilesOverlay.loadingBackgroundColor = Color.parseColor("#0B0B0C")
         map.overlayManager.tilesOverlay.loadingLineColor = Color.parseColor("#1A1B1E")
         addView(map, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))

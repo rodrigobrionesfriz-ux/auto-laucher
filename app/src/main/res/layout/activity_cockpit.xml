@@ -181,6 +181,19 @@
                     android:scaleType="fitCenter"
                     android:src="@drawable/ic_map"
                     android:tint="@color/text" />
+
+                <ImageButton
+                    android:id="@+id/btnMapStyle"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:layout_gravity="top|end"
+                    android:background="@drawable/bg_round"
+                    android:contentDescription="Mapa claro u oscuro"
+                    android:padding="11dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_contrast"
+                    android:tint="@color/text"
+                    android:visibility="gone" />
             </FrameLayout>
 
             <!-- Derecha: reproductor -->

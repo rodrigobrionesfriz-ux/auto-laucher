@@ -465,15 +465,24 @@ class MainActivity : Activity() {
             box.layoutParams = lp
         }
         showMap = getSharedPreferences("launcher", MODE_PRIVATE).getBoolean("show_map", false)
+        val styleBtn = findViewById<ImageButton>(R.id.btnMapStyle)
+        var mapDark = getSharedPreferences("launcher", MODE_PRIVATE).getBoolean("map_dark", true)
+        styleBtn?.setOnClickListener {
+            mapDark = !mapDark
+            getSharedPreferences("launcher", MODE_PRIVATE).edit().putBoolean("map_dark", mapDark).apply()
+            mapPanel?.setDark(mapDark)
+            Toast.makeText(this, if (mapDark) "Mapa oscuro" else "Mapa claro", Toast.LENGTH_SHORT).show()
+        }
         fun apply() {
             if (showMap && mapPanel == null) {
                 mapPanel = try { MapPanel(this) } catch (e: Throwable) { null }
-                mapPanel?.let { box.addView(it, android.widget.FrameLayout.LayoutParams(-1, -1)) }
+                mapPanel?.let { box.addView(it, android.widget.FrameLayout.LayoutParams(-1, -1)); it.setDark(mapDark) }
                 lastLocation?.let { mapPanel?.onLocation(it, 0) }
             }
             box.visibility = if (showMap) View.VISIBLE else View.GONE
             g.visibility = if (showMap) View.INVISIBLE else View.VISIBLE
             btn.setImageResource(if (showMap) R.drawable.ic_speedo else R.drawable.ic_map)
+            styleBtn?.visibility = if (showMap) View.VISIBLE else View.GONE
             if (showMap) mapPanel?.resume() else mapPanel?.pause()
         }
         btn.setOnClickListener {
