@@ -182,8 +182,14 @@ class MainActivity : Activity() {
         }
 
         findViewById<LinearLayout>(R.id.weatherBox).setOnClickListener {
+            val i = Intent(this, WeatherActivity::class.java)
+            lastLocation?.let { i.putExtra("lat", it.latitude); i.putExtra("lon", it.longitude) }
+            startActivity(i)
+        }
+        findViewById<LinearLayout>(R.id.weatherBox).setOnLongClickListener {
             weatherAt = 0; weatherTryAt = 0
             weatherDesc.text = "Actualizando…"
+            true
         }
 
         askLocationPermission()
@@ -763,6 +769,8 @@ class MainActivity : Activity() {
     private fun onLocation(loc: Location) {
         lastFixAt = System.currentTimeMillis()
         lastLocation = loc
+        getSharedPreferences("launcher", MODE_PRIVATE).edit()
+            .putFloat("last_lat", loc.latitude.toFloat()).putFloat("last_lon", loc.longitude.toFloat()).apply()
         val kmh = if (loc.hasSpeed()) (loc.speed * 3.6f).roundToInt() else 0
         gauge.setSpeed(if (kmh < 2) 0 else kmh)
         mapPanel?.onLocation(loc, if (kmh < 2) 0 else kmh)

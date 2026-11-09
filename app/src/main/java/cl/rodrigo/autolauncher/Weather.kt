@@ -37,7 +37,7 @@ object Weather {
         }
     }
 
-    private fun place(ctx: Context, lat: Double, lon: Double): String? = try {
+    fun place(ctx: Context, lat: Double, lon: Double): String? = try {
         if (!Geocoder.isPresent()) null
         else {
             @Suppress("DEPRECATION")
@@ -48,7 +48,7 @@ object Weather {
         null
     }
 
-    private fun icon(code: Int, day: Boolean): Int = when (code) {
+    fun icon(code: Int, day: Boolean): Int = when (code) {
         0 -> if (day) R.drawable.wx_sun else R.drawable.wx_moon
         1, 2 -> if (day) R.drawable.wx_partly else R.drawable.wx_partly_night
         3 -> R.drawable.wx_cloud
@@ -59,7 +59,7 @@ object Weather {
         else -> R.drawable.wx_cloud
     }
 
-    private fun describe(code: Int): String = when (code) {
+    fun describe(code: Int): String = when (code) {
         0 -> "Despejado"
         1 -> "Mayormente despejado"
         2 -> "Parcial nublado"
