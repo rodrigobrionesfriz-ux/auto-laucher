@@ -57,7 +57,7 @@ class CallPanel(ctx: Context) : FrameLayout(ctx) {
         hex.lineTo(pw * 0.78f, h * 0.88f); hex.lineTo(18f, h * 0.86f); hex.close()
         region.setPath(hex, android.graphics.Region(0, 0, w, h))
         pFill.shader = LinearGradient(0f, h * 0.1f, 0f, h * 0.88f,
-            Color.parseColor("#FA14171C"), Color.parseColor("#FA0A0B0D"), Shader.TileMode.CLAMP)
+            Color.parseColor("#FF14171C"), Color.parseColor("#FF0A0B0D"), Shader.TileMode.CLAMP)
         // El contenido se ubica dentro del hexágono
         val lp = col.layoutParams as LayoutParams
         lp.width = (pw - 18f - 16 * dp).toInt()
