@@ -456,22 +456,12 @@ class MainActivity : Activity() {
 
     // ---------- Llamadas ----------
 
-    /** Inserta el panel de llamada encima de la columna izquierda (clima y accesos). */
+    /** Pone el panel de llamada encima de todo, con la forma del panel izquierdo del marco. */
     private fun setupCallPanel() {
         Calls.load(this)
-        val left = findViewById<View>(R.id.weatherBox)?.parent as? android.view.ViewGroup ?: return
-        val row = left.parent as? android.view.ViewGroup ?: return
-        val idx = row.indexOfChild(left)
-        val lp = left.layoutParams
-        row.removeView(left)
-        val holder = android.widget.FrameLayout(this)
-        holder.addView(left, android.widget.FrameLayout.LayoutParams(-1, -1))
+        val root = findViewById<View>(R.id.frame)?.parent as? android.widget.FrameLayout ?: return
         val panel = CallPanel(this)
-        val m = (10 * resources.displayMetrics.density).toInt()
-        holder.addView(panel, android.widget.FrameLayout.LayoutParams(-1, -1).apply {
-            setMargins(m * 2, m, m, m)
-        })
-        row.addView(holder, idx, lp)
+        root.addView(panel, android.widget.FrameLayout.LayoutParams(-1, -1))
         callPanel = panel
         Calls.listener = { panel.refresh() }
         panel.refresh()

@@ -33,21 +33,61 @@ class CallPanel(ctx: Context) : FrameLayout(ctx) {
     private val timer: TextView
     private val muteBtn: ImageButton
     private var shownNumber: String? = null
+    private val col: LinearLayout
+
+    // Forma de 6 lados, igual al panel izquierdo del marco (mismas proporciones que CockpitFrame)
+    private val hex = android.graphics.Path()
+    private val region = android.graphics.Region()
+    private val pFill = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val pEdge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE; strokeWidth = 2.5f * resources.displayMetrics.density
+        color = Color.parseColor("#2BD96B")
+    }
+    private val pGlow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE; strokeWidth = 8f * resources.displayMetrics.density
+        color = Color.argb(50, 43, 217, 107)
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        val pw = w * 0.29f
+        hex.reset()
+        hex.moveTo(18f, h * 0.13f); hex.lineTo(pw * 0.78f, h * 0.10f)
+        hex.lineTo(pw, h * 0.20f); hex.lineTo(pw, h * 0.80f)
+        hex.lineTo(pw * 0.78f, h * 0.88f); hex.lineTo(18f, h * 0.86f); hex.close()
+        region.setPath(hex, android.graphics.Region(0, 0, w, h))
+        pFill.shader = LinearGradient(0f, h * 0.1f, 0f, h * 0.88f,
+            Color.parseColor("#FA14171C"), Color.parseColor("#FA0A0B0D"), Shader.TileMode.CLAMP)
+        // El contenido se ubica dentro del hexágono
+        val lp = col.layoutParams as LayoutParams
+        lp.width = (pw - 18f - 16 * dp).toInt()
+        lp.height = (h * 0.70f).toInt()
+        lp.leftMargin = (18f + 8 * dp).toInt()
+        lp.topMargin = (h * 0.14f).toInt()
+        col.layoutParams = lp
+    }
+
+    override fun dispatchDraw(canvas: Canvas) {
+        canvas.drawPath(hex, pGlow)
+        canvas.drawPath(hex, pFill)
+        canvas.drawPath(hex, pEdge)
+        super.dispatchDraw(canvas)
+    }
+
+    /** Solo recibe toques dentro del hexágono; el resto pasa a la pantalla de abajo. */
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        if (visibility != View.VISIBLE || !region.contains(ev.x.toInt(), ev.y.toInt())) return false
+        super.dispatchTouchEvent(ev)
+        return true
+    }
 
     init {
-        background = GradientDrawable().apply {
-            colors = intArrayOf(Color.parseColor("#F2121418"), Color.parseColor("#F20A0B0D"))
-            orientation = GradientDrawable.Orientation.TOP_BOTTOM
-            cornerRadius = 18 * dp
-            setStroke(px(2), Color.parseColor("#2BD96B"))
-        }
-        isClickable = true   // que no pase el toque a los íconos de abajo
+        setWillNotDraw(false)
         visibility = View.GONE
 
-        val col = LinearLayout(ctx).apply {
+        col = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(px(12), px(12), px(12), px(12))
+            gravity = Gravity.CENTER
         }
         status = TextView(ctx).apply {
             textSize = 13f; setTextColor(Color.parseColor("#2BD96B")); letterSpacing = 0.15f
@@ -55,9 +95,9 @@ class CallPanel(ctx: Context) : FrameLayout(ctx) {
         }
         col.addView(status)
         avatar = Avatar(ctx)
-        col.addView(avatar, LinearLayout.LayoutParams(px(86), px(86)).apply { topMargin = px(8) })
+        col.addView(avatar, LinearLayout.LayoutParams(px(96), px(96)).apply { topMargin = px(10) })
         nameTv = TextView(ctx).apply {
-            textSize = 22f; setTextColor(Color.WHITE); setTypeface(typeface, android.graphics.Typeface.BOLD)
+            textSize = 24f; setTextColor(Color.WHITE); setTypeface(typeface, android.graphics.Typeface.BOLD)
             maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; gravity = Gravity.CENTER
         }
         col.addView(nameTv, LinearLayout.LayoutParams(-1, -2).apply { topMargin = px(8) })
@@ -66,7 +106,7 @@ class CallPanel(ctx: Context) : FrameLayout(ctx) {
         }
         col.addView(numberTv, LinearLayout.LayoutParams(-1, -2))
         timer = TextView(ctx).apply {
-            textSize = 30f; setTextColor(Color.WHITE); typeface = Fonts.bold(ctx); gravity = Gravity.CENTER; text = "00:00"
+            textSize = 34f; setTextColor(Color.WHITE); typeface = Fonts.bold(ctx); gravity = Gravity.CENTER; text = "00:00"
         }
         col.addView(timer, LinearLayout.LayoutParams(-1, -2).apply { topMargin = px(6) })
 
@@ -77,7 +117,7 @@ class CallPanel(ctx: Context) : FrameLayout(ctx) {
                 background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.parseColor(color)) }
                 scaleType = ImageView.ScaleType.FIT_CENTER; setPadding(px(15), px(15), px(15), px(15))
                 setOnClickListener { onClick() }
-                buttons.addView(this, LinearLayout.LayoutParams(px(58), px(58)).apply { marginStart = px(4); marginEnd = px(4) })
+                buttons.addView(this, LinearLayout.LayoutParams(px(56), px(56)).apply { marginStart = px(3); marginEnd = px(3) })
             }
         btn(R.drawable.ic_phone, "#2BD96B", "Contestar") { hook(ctx) }
         btn(R.drawable.ic_phone_end, "#FF3B30", "Colgar") { hook(ctx) }
@@ -85,8 +125,8 @@ class CallPanel(ctx: Context) : FrameLayout(ctx) {
         btn(R.drawable.ic_dialpad, "#3A3F47", "Teléfono") {
             Apps.slotFor("phone")?.let { Apps.open(ctx, it) {} }
         }
-        col.addView(buttons, LinearLayout.LayoutParams(-1, -2).apply { topMargin = px(12) })
-        addView(col, LayoutParams(-1, -1))
+        col.addView(buttons, LinearLayout.LayoutParams(-1, -2).apply { topMargin = px(16) })
+        addView(col, LayoutParams(px(200), px(300)))
     }
 
     /** Botón de llamada del volante: contesta si suena, cuelga si hay llamada. */
