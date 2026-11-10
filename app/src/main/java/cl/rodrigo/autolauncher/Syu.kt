@@ -172,6 +172,7 @@ object Syu {
     }
 
     private fun onUpdate(module: Int, code: Int, ints: IntArray?, flts: FloatArray?, strs: Array<String?>?) {
+        try { Calls.onSyu(module, code, ints, strs) } catch (e: Exception) {}
         if (module == BT_MODULE) {
             val first = strs?.firstOrNull()
             when (code) {

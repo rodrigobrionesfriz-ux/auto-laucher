@@ -33,6 +33,7 @@ class MainActivity : Activity() {
     private var frame: CockpitFrame? = null
     private var speedBar: LedBar? = null
     private var mapPanel: MapPanel? = null
+    private var callPanel: CallPanel? = null
     private var showMap = false
     private var vuBar: LedBar? = null
     private val audio = AudioLevel()
@@ -101,6 +102,7 @@ class MainActivity : Activity() {
         logoRefreshers["car"] = { setCarMode("custom") }
         frame = findViewById(R.id.frame)
         setupMap(gaugeView as? CockpitGauge)
+        if (cockpit) setupCallPanel()
         speedBar = findViewById(R.id.speedBar)
         vuBar = findViewById<LedBar>(R.id.vuBar)?.apply { vu = true }
         audio.mode = Prefs.vuMode(this)
@@ -341,6 +343,7 @@ class MainActivity : Activity() {
             "Buscar actualización (tienes ${Updater.currentName(this)})",
             "Diagnóstico",
             "Vúmetro: " + when (Prefs.vuMode(this)) { "sim" -> "Ritmo simulado"; "off" -> "Apagado"; else -> "Automático" },
+            "Llamadas: aprender con una llamada de prueba",
         )
         AlertDialog.Builder(this).setItems(items) { _, which ->
             when (which) {
@@ -371,6 +374,7 @@ class MainActivity : Activity() {
                         val m = listOf("auto", "sim", "off")[w]
                         Prefs.setVuMode(this, m); audio.mode = m
                     }.show()
+                7 -> learnCalls()
             }
         }.show()
     }
@@ -449,6 +453,59 @@ class MainActivity : Activity() {
     }
 
     // ---------- Luces del vehículo ----------
+
+    // ---------- Llamadas ----------
+
+    /** Inserta el panel de llamada encima de la columna izquierda (clima y accesos). */
+    private fun setupCallPanel() {
+        Calls.load(this)
+        val left = findViewById<View>(R.id.weatherBox)?.parent as? android.view.ViewGroup ?: return
+        val row = left.parent as? android.view.ViewGroup ?: return
+        val idx = row.indexOfChild(left)
+        val lp = left.layoutParams
+        row.removeView(left)
+        val holder = android.widget.FrameLayout(this)
+        holder.addView(left, android.widget.FrameLayout.LayoutParams(-1, -1))
+        val panel = CallPanel(this)
+        val m = (10 * resources.displayMetrics.density).toInt()
+        holder.addView(panel, android.widget.FrameLayout.LayoutParams(-1, -1).apply {
+            setMargins(m * 2, m, m, m)
+        })
+        row.addView(holder, idx, lp)
+        callPanel = panel
+        Calls.listener = { panel.refresh() }
+        panel.refresh()
+    }
+
+    private fun learnCalls() {
+        AlertDialog.Builder(this)
+            .setTitle("Aprender llamadas")
+            .setMessage("1. Toca Empezar.\n2. Pide que te llamen al celular conectado a la radio (o llama tú a alguien).\n" +
+                "3. Contesta, habla unos segundos y corta.\n4. Vuelve aquí y toca Terminar.\n\nTienes hasta 2 minutos.")
+            .setPositiveButton("Empezar") { _, _ ->
+                Calls.startLearning()
+                val dlg = AlertDialog.Builder(this)
+                    .setTitle("Aprendiendo…")
+                    .setMessage("Haz la llamada de prueba ahora. Cuando cortes, toca Terminar.")
+                    .setCancelable(false)
+                    .setPositiveButton("Terminar") { _, _ -> showLearnResult() }
+                    .show()
+                handler.postDelayed({ if (Calls.learning) { dlg.dismiss(); showLearnResult() } }, 120_000)
+            }
+            .setNeutralButton("Olvidar lo aprendido") { _, _ -> Calls.resetLearning(this) }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun showLearnResult() {
+        if (!Calls.learning) return
+        val res = Calls.finishLearning(this)
+        AlertDialog.Builder(this)
+            .setTitle("Resultado")
+            .setMessage(res + "\nSi algo no calza, mándame una foto de Diagnóstico (sección LLAMADAS).")
+            .setPositiveButton("OK", null)
+            .show()
+    }
 
     // ---------- Mapa en lugar del velocímetro ----------
 
@@ -724,6 +781,8 @@ class MainActivity : Activity() {
             need.add(Manifest.permission.ACCESS_FINE_LOCATION); need.add(Manifest.permission.ACCESS_COARSE_LOCATION)
         }
         if (cockpit && !hasAudioPermission()) need.add(Manifest.permission.RECORD_AUDIO)
+        if (cockpit && checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED)
+            need.add(Manifest.permission.READ_CONTACTS)
         if (need.isNotEmpty()) requestPermissions(need.toTypedArray(), 1)
     }
 
@@ -812,6 +871,7 @@ class MainActivity : Activity() {
         updateWeatherIfNeeded(now)
         applyNight()
         gauge.setLights(Syu.lightsOn)
+        callPanel?.takeIf { Calls.active }?.refresh()
         refreshOdometer()
         refreshMusic()
     }

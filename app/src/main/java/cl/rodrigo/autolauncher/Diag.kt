@@ -159,6 +159,9 @@ class DiagActivity : Activity() {
         text.text = buildString {
             append("== SERVICIO SYU ==\n")
             append(Syu.report())
+            append("\n\n== LLAMADAS ==\n")
+            append(Calls.mappingText())
+            if (Calls.lastReport.isNotBlank()) append("\n").append(Calls.lastReport)
             append("\n\n== SESIONES MULTIMEDIA ==\n")
             append(Music.sessionsReport(this@DiagActivity))
             append("\n\n== RECIBIDO (más reciente arriba) ==\n")
