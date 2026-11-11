@@ -16,6 +16,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -199,6 +200,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        applySystemUi(false)
         startGps()
         handler.removeCallbacks(ticker)
         handler.post(ticker)
@@ -207,9 +209,37 @@ class MainActivity : Activity() {
         if (vuBar != null) {
             if (hasAudioPermission()) audio.start()
             handler.removeCallbacks(vuTicker)
-        mapPanel?.pause()
             handler.post(vuTicker)
         }
+    }
+
+    // ---- Pantalla completa: se oculta la barra superior y reaparece al tocar ----
+
+    private val hideUiRunnable = Runnable { applySystemUi(false) }
+
+    /** showTop=true muestra la barra de estado unos segundos; false, inmersivo total. */
+    private fun applySystemUi(showTop: Boolean) {
+        var f = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        if (!showTop) f = f or View.SYSTEM_UI_FLAG_FULLSCREEN
+        window.decorView.systemUiVisibility = f
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applySystemUi(false)
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (ev.action == MotionEvent.ACTION_DOWN) {
+            applySystemUi(true)
+            handler.removeCallbacks(hideUiRunnable)
+            handler.postDelayed(hideUiRunnable, 4000)
+        }
+        return super.dispatchTouchEvent(ev)
     }
 
     override fun onDestroy() {
@@ -221,7 +251,9 @@ class MainActivity : Activity() {
         super.onPause()
         handler.removeCallbacks(ticker)
         handler.removeCallbacks(vuTicker)
+        handler.removeCallbacks(hideUiRunnable)
         audio.stop()
+        mapPanel?.pause()
         stopGps()
     }
 

@@ -78,6 +78,7 @@ class CockpitGauge @JvmOverloads constructor(
 
     private val pFace = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pRing = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val pLedRing = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val pLine = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val pFill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pRoad = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -348,6 +349,15 @@ class CockpitGauge @JvmOverloads constructor(
         // Cara y anillo
         canvas.drawCircle(cx, cy, r, pFace)
         canvas.drawCircle(cx, cy, r * 0.988f, pRing)
+        // Aro LED gris con halo (mismo estilo que los paneles)
+        pLedRing.strokeWidth = r * 0.055f; pLedRing.color = Color.argb(26, 170, 178, 188)
+        canvas.drawCircle(cx, cy, r * 0.978f, pLedRing)
+        pLedRing.strokeWidth = r * 0.028f; pLedRing.color = Color.argb(60, 185, 192, 202)
+        canvas.drawCircle(cx, cy, r * 0.982f, pLedRing)
+        pLedRing.strokeWidth = r * 0.012f; pLedRing.color = Color.argb(175, 203, 209, 218)
+        canvas.drawCircle(cx, cy, r * 0.985f, pLedRing)
+        pLedRing.strokeWidth = r * 0.005f; pLedRing.color = Color.parseColor("#F2F5F9")
+        canvas.drawCircle(cx, cy, r * 0.985f, pLedRing)
         drawCompass(canvas)
 
         // Cara interior gris oscura (estilo tablero)
