@@ -72,13 +72,52 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
                 Color.parseColor("#DCDFE4"), Color.parseColor("#BDC1C8"), Shader.TileMode.CLAMP)
             pSpot.shader = android.graphics.RadialGradient(w / 2f, h * 0.48f, h * 0.62f,
                 Color.argb(110, 255, 255, 255), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            buildDayBg(w.toInt(), h.toInt())
         } else {
             pBg.shader = LinearGradient(0f, 0f, 0f, h,
                 Color.parseColor("#0B0B0C"), Color.parseColor("#000000"), Shader.TileMode.CLAMP)
             // Luz gris suave detrás del velocímetro
             pSpot.shader = android.graphics.RadialGradient(w / 2f, h * 0.48f, h * 0.62f,
                 Color.argb(46, 160, 166, 174), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            bgDay?.recycle(); bgDay = null
         }
+    }
+
+    /** Fondo claro con textura cepillada en diagonal y viñeta, pre-renderizado una sola vez. */
+    private var bgDay: android.graphics.Bitmap? = null
+    private fun buildDayBg(w: Int, h: Int) {
+        if (w <= 0 || h <= 0) return
+        bgDay?.recycle()
+        val bmp = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val wf = w.toFloat(); val hf = h.toFloat()
+        val p = Paint()
+        // Degradado base
+        p.shader = LinearGradient(0f, 0f, 0f, hf,
+            Color.parseColor("#DEE1E6"), Color.parseColor("#BCC0C7"), Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, wf, hf, p)
+        p.shader = null
+        // Trama cepillada en diagonal: surco claro + sombra, efecto relieve
+        val pl = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeWidth = 1f }
+        var k = -hf
+        while (k < wf + hf) {
+            pl.color = Color.argb(22, 255, 255, 255)
+            c.drawLine(k, 0f, k + hf, hf, pl)
+            pl.color = Color.argb(14, 40, 44, 50)
+            c.drawLine(k + 1.6f, 0f, k + hf + 1.6f, hf, pl)
+            k += 7f
+        }
+        // Luz amplia arriba al centro
+        p.shader = android.graphics.RadialGradient(wf / 2f, hf * 0.30f, hf * 0.85f,
+            Color.argb(60, 255, 255, 255), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, wf, hf, p)
+        // Viñeta: bordes y esquinas levemente más oscuros
+        p.shader = android.graphics.RadialGradient(wf / 2f, hf * 0.45f, wf * 0.62f,
+            intArrayOf(Color.TRANSPARENT, Color.TRANSPARENT, Color.argb(56, 30, 34, 40)),
+            floatArrayOf(0f, 0.72f, 1f), Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, wf, hf, p)
+        p.shader = null
+        bgDay = bmp
     }
 
     private val pSpot = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -86,7 +125,9 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
 
     override fun onDraw(canvas: Canvas) {
         val w = width.toFloat(); val h = height.toFloat()
-        canvas.drawRect(0f, 0f, w, h, pBg)
+        val bd = bgDay
+        if (day && bd != null) canvas.drawBitmap(bd, 0f, 0f, null)
+        else canvas.drawRect(0f, 0f, w, h, pBg)
         canvas.drawRect(0f, 0f, w, h, pSpot)
         val pw = w * 0.29f
         panel(canvas, w, h, pw, true)
