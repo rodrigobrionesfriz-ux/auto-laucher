@@ -133,27 +133,7 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
         panel(canvas, w, h, pw, true)
         panel(canvas, w, h, pw, false)
 
-        // Muesca superior (hora)
-        path.reset()
-        path.moveTo(w * 0.33f, 0f); path.lineTo(w * 0.375f, h * 0.108f)
-        path.lineTo(w * 0.625f, h * 0.108f); path.lineTo(w * 0.67f, 0f)
-        pPanel.shader = if (day)
-            LinearGradient(0f, 0f, 0f, h * 0.108f, Color.parseColor("#F1F3F6"), Color.parseColor("#E0E3E8"), Shader.TileMode.CLAMP)
-        else
-            LinearGradient(0f, 0f, 0f, h * 0.108f, Color.parseColor("#1E1F22"), Color.parseColor("#111214"), Shader.TileMode.CLAMP)
-        canvas.drawPath(path, pPanel)
-        ledEdge(canvas, path)
-
-        // Base inferior (controles)
-        path.reset()
-        path.moveTo(w * 0.30f, h); path.lineTo(w * 0.34f, h * 0.875f)
-        path.lineTo(w * 0.66f, h * 0.875f); path.lineTo(w * 0.70f, h)
-        pPanel.shader = if (day)
-            LinearGradient(0f, h * 0.875f, 0f, h, Color.parseColor("#EDEFF3"), Color.parseColor("#DADDE2"), Shader.TileMode.CLAMP)
-        else
-            LinearGradient(0f, h * 0.875f, 0f, h, Color.parseColor("#1A1B1E"), Color.parseColor("#0C0C0D"), Shader.TileMode.CLAMP)
-        canvas.drawPath(path, pPanel)
-        ledEdge(canvas, path)
+        // La hora y los controles del reproductor van flotando, sin marco.
     }
 
     private fun panel(canvas: Canvas, w: Float, h: Float, pw: Float, left: Boolean) {
