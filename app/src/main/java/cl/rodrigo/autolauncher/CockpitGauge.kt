@@ -76,6 +76,21 @@ class CockpitGauge @JvmOverloads constructor(
     private val colLabel = Color.parseColor("#D2D6DB")
     private val colStatus = context.getColor(R.color.text_dim)
 
+    /** Modo día: cara clara y textos oscuros. */
+    var day = false
+        set(v) {
+            if (field != v) {
+                field = v
+                if (width > 0) buildShaders(height.toFloat())
+                invalidate()
+            }
+        }
+    private fun cText() = if (day) Color.parseColor("#23262B") else colText
+    private fun cLabel() = if (day) Color.parseColor("#3A4046") else colLabel
+    private fun cAccent() = if (day) Color.parseColor("#0C8F70") else colAccent
+    private fun cStatus() = if (day) Color.parseColor("#566069") else colStatus
+    private fun cDim() = if (day) Color.parseColor("#8E959D") else colDim
+
     private val pFace = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pRing = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val pLedRing = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
@@ -271,19 +286,34 @@ class CockpitGauge @JvmOverloads constructor(
         cx = w / 2f
         r = min(w / 2f, h * 0.47f) - 4f
         cy = r + 6f
-        pFace.shader = RadialGradient(cx, cy, r,
-            intArrayOf(Color.parseColor("#1B1C1F"), Color.parseColor("#0B0B0C"), Color.parseColor("#000000")),
-            floatArrayOf(0f, 0.7f, 1f), Shader.TileMode.CLAMP)
+        buildShaders(h.toFloat())
+        post { onSized?.invoke() }
+    }
+
+    private fun buildShaders(h: Float) {
+        if (day) {
+            pFace.shader = RadialGradient(cx, cy, r,
+                intArrayOf(Color.parseColor("#F0F2F5"), Color.parseColor("#DEE1E6"), Color.parseColor("#C8CCD2")),
+                floatArrayOf(0f, 0.7f, 1f), Shader.TileMode.CLAMP)
+            pInner.shader = RadialGradient(cx, cy - r * 0.2f, r * 0.75f,
+                intArrayOf(Color.parseColor("#EAEDF0"), Color.parseColor("#DDE0E5"), Color.parseColor("#CDD1D7")),
+                floatArrayOf(0f, 0.6f, 1f), Shader.TileMode.CLAMP)
+        } else {
+            pFace.shader = RadialGradient(cx, cy, r,
+                intArrayOf(Color.parseColor("#1B1C1F"), Color.parseColor("#0B0B0C"), Color.parseColor("#000000")),
+                floatArrayOf(0f, 0.7f, 1f), Shader.TileMode.CLAMP)
+            pInner.shader = RadialGradient(cx, cy - r * 0.2f, r * 0.75f,
+                intArrayOf(Color.parseColor("#34363A"), Color.parseColor("#222326"), Color.parseColor("#151618")),
+                floatArrayOf(0f, 0.6f, 1f), Shader.TileMode.CLAMP)
+        }
         pRing.shader = LinearGradient(0f, cy - r, 0f, cy + r,
             intArrayOf(Color.parseColor("#A4A9B0"), Color.parseColor("#2A2C30"), Color.parseColor("#6B7078")),
             null, Shader.TileMode.CLAMP)
         pRing.strokeWidth = r * 0.025f
-        post { onSized?.invoke() }
-        pInner.shader = RadialGradient(cx, cy - r * 0.2f, r * 0.75f,
-            intArrayOf(Color.parseColor("#34363A"), Color.parseColor("#222326"), Color.parseColor("#151618")),
-            floatArrayOf(0f, 0.6f, 1f), Shader.TileMode.CLAMP)
         val vy = cy + r * 0.28f
-        pRoad.shader = LinearGradient(0f, vy, 0f, h.toFloat(),
+        pRoad.shader = if (day) LinearGradient(0f, vy, 0f, h,
+            Color.argb(0, 120, 124, 131), Color.argb(235, 118, 123, 130), Shader.TileMode.CLAMP)
+        else LinearGradient(0f, vy, 0f, h,
             Color.argb(0, 30, 31, 34), Color.argb(242, 40, 42, 46), Shader.TileMode.CLAMP)
         pBeam.shader = LinearGradient(0f, h - r * 0.45f, 0f, vy,
             Color.argb(77, 255, 243, 196), Color.argb(0, 255, 243, 196), Shader.TileMode.CLAMP)
@@ -299,7 +329,7 @@ class CockpitGauge @JvmOverloads constructor(
 
     /** Anillo exterior de brújula: gira para que la dirección de avance quede arriba. */
     private fun drawCompass(canvas: Canvas) {
-        pLine.color = Color.parseColor("#34363A"); pLine.strokeWidth = 1.5f
+        pLine.color = if (day) Color.parseColor("#AEB3BA") else Color.parseColor("#34363A"); pLine.strokeWidth = 1.5f
         canvas.drawCircle(cx, cy, r * 0.875f, pLine)
         pText.typeface = tfBold
         pText.textSize = r * 0.105f
@@ -312,9 +342,9 @@ class CockpitGauge @JvmOverloads constructor(
                 var diff = kotlin.math.abs(((d - bearing) % 360 + 360) % 360)
                 if (diff > 180) diff = 360 - diff
                 pText.color = when {
-                    diff < 22.5f -> colAccent
+                    diff < 22.5f -> cAccent()
                     name == "N" -> colDanger
-                    else -> colLabel
+                    else -> cLabel()
                 }
                 val rr = r * 0.925f
                 val ly = cy + rr * sa - (pText.descent() + pText.ascent()) / 2
@@ -324,7 +354,7 @@ class CockpitGauge @JvmOverloads constructor(
                 canvas.restore()
             } else {
                 val major = d % 15 == 0
-                pTick.color = if (major) colLabel else colDim
+                pTick.color = if (major) cLabel() else cDim()
                 pTick.strokeWidth = if (major) r * 0.008f else r * 0.005f
                 val r1 = r * 0.965f; val r2 = if (major) r * 0.905f else r * 0.935f
                 canvas.drawLine(cx + r1 * ca, cy + r1 * sa, cx + r2 * ca, cy + r2 * sa, pTick)
@@ -337,7 +367,7 @@ class CockpitGauge @JvmOverloads constructor(
         path.lineTo(cx - r * 0.03f, cy - r * 0.84f)
         path.lineTo(cx + r * 0.03f, cy - r * 0.84f)
         path.close()
-        pFill.color = colAccent
+        pFill.color = cAccent()
         canvas.drawPath(path, pFill)
     }
 
@@ -350,14 +380,25 @@ class CockpitGauge @JvmOverloads constructor(
         canvas.drawCircle(cx, cy, r, pFace)
         canvas.drawCircle(cx, cy, r * 0.988f, pRing)
         // Aro LED gris con halo (mismo estilo que los paneles)
-        pLedRing.strokeWidth = r * 0.055f; pLedRing.color = Color.argb(26, 170, 178, 188)
-        canvas.drawCircle(cx, cy, r * 0.978f, pLedRing)
-        pLedRing.strokeWidth = r * 0.028f; pLedRing.color = Color.argb(60, 185, 192, 202)
-        canvas.drawCircle(cx, cy, r * 0.982f, pLedRing)
-        pLedRing.strokeWidth = r * 0.012f; pLedRing.color = Color.argb(175, 203, 209, 218)
-        canvas.drawCircle(cx, cy, r * 0.985f, pLedRing)
-        pLedRing.strokeWidth = r * 0.005f; pLedRing.color = Color.parseColor("#F2F5F9")
-        canvas.drawCircle(cx, cy, r * 0.985f, pLedRing)
+        if (day) {
+            pLedRing.strokeWidth = r * 0.055f; pLedRing.color = Color.argb(30, 70, 76, 84)
+            canvas.drawCircle(cx, cy, r * 0.978f, pLedRing)
+            pLedRing.strokeWidth = r * 0.028f; pLedRing.color = Color.argb(70, 86, 92, 100)
+            canvas.drawCircle(cx, cy, r * 0.982f, pLedRing)
+            pLedRing.strokeWidth = r * 0.012f; pLedRing.color = Color.argb(200, 122, 128, 136)
+            canvas.drawCircle(cx, cy, r * 0.985f, pLedRing)
+            pLedRing.strokeWidth = r * 0.005f; pLedRing.color = Color.parseColor("#FBFCFE")
+            canvas.drawCircle(cx, cy, r * 0.985f, pLedRing)
+        } else {
+            pLedRing.strokeWidth = r * 0.055f; pLedRing.color = Color.argb(26, 170, 178, 188)
+            canvas.drawCircle(cx, cy, r * 0.978f, pLedRing)
+            pLedRing.strokeWidth = r * 0.028f; pLedRing.color = Color.argb(60, 185, 192, 202)
+            canvas.drawCircle(cx, cy, r * 0.982f, pLedRing)
+            pLedRing.strokeWidth = r * 0.012f; pLedRing.color = Color.argb(175, 203, 209, 218)
+            canvas.drawCircle(cx, cy, r * 0.985f, pLedRing)
+            pLedRing.strokeWidth = r * 0.005f; pLedRing.color = Color.parseColor("#F2F5F9")
+            canvas.drawCircle(cx, cy, r * 0.985f, pLedRing)
+        }
         drawCompass(canvas)
 
         // Cara interior gris oscura (estilo tablero)
@@ -371,7 +412,7 @@ class CockpitGauge @JvmOverloads constructor(
         path.moveTo(cx - bw, by); path.lineTo(cx - r * 0.02f, vy)
         path.lineTo(cx + r * 0.02f, vy); path.lineTo(cx + bw, by); path.close()
         canvas.drawPath(path, pRoad)
-        pLine.color = Color.argb(90, 200, 205, 212); pLine.strokeWidth = 1.5f
+        pLine.color = if (day) Color.argb(130, 70, 75, 82) else Color.argb(90, 200, 205, 212); pLine.strokeWidth = 1.5f
         canvas.drawLine(cx - bw, by, cx - r * 0.02f, vy, pLine)
         canvas.drawLine(cx + bw, by, cx + r * 0.02f, vy, pLine)
 
@@ -408,7 +449,7 @@ class CockpitGauge @JvmOverloads constructor(
         // Marcas blancas dentro de la banda y números
         pText.typeface = tfBold
         pText.textSize = r * 0.095f
-        pText.color = colText
+        pText.color = cText()
         pTick.strokeCap = Paint.Cap.BUTT
         var v = 0
         while (v <= maxSpeed) {
@@ -451,16 +492,16 @@ class CockpitGauge @JvmOverloads constructor(
 
         // Textos
         pText.typeface = tfNormal
-        pText.color = colAccent; pText.textSize = r * 0.06f
+        pText.color = cAccent(); pText.textSize = r * 0.06f
         canvas.drawText("${bearing.roundToInt() % 360}° ${heading}", cx, cy - r * 0.36f, pText)
         pText.typeface = tfBold
-        pText.color = speedColor(shown, colText); pText.textSize = r * 0.33f
+        pText.color = speedColor(shown, cText()); pText.textSize = r * 0.33f
         canvas.drawText(shown.roundToInt().toString(), cx, cy + r * 0.07f, pText)
         pText.typeface = tfNormal
-        pText.color = colText; pText.textSize = r * 0.065f
+        pText.color = cText(); pText.textSize = r * 0.065f
         canvas.drawText("km/h", cx, cy + r * 0.18f, pText)
         pText.typeface = tfPlain
-        pText.color = colStatus; pText.textSize = r * 0.055f
+        pText.color = cStatus(); pText.textSize = r * 0.055f
         canvas.drawText(status, cx, cy + r * 0.28f, pText)
 
         // Camioneta (dibujo o foto propia)

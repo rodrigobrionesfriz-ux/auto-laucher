@@ -6,6 +6,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.location.GnssStatus
 import android.location.Location
 import android.location.LocationListener
@@ -278,6 +279,7 @@ class MainActivity : Activity() {
             return row.findViewById(R.id.rowBody)
         }
 
+        dock.post { applyNight(force = true) }   // re-aplica el tema a las etiquetas nuevas
         val iconPx = ((if (cockpit) 66 else 58) * resources.displayMetrics.density).toInt()
         fun appIcon(pkg: String?, iv: ImageView): Boolean {
             if (pkg == null || pkg == Apps.SETTINGS) return false
@@ -806,6 +808,48 @@ class MainActivity : Activity() {
         tach?.day = dayTheme
         speedBar?.day = dayTheme
         vuBar?.day = dayTheme
+        (gauge as? CockpitGauge)?.day = dayTheme
+        if (!cockpit) return
+
+        val cText = if (dayTheme) Color.parseColor("#22262B") else getColor(R.color.text)
+        val cDim = if (dayTheme) Color.parseColor("#566069") else getColor(R.color.text_dim)
+        val cAccent = if (dayTheme) Color.parseColor("#0C8F70") else getColor(R.color.accent)
+        val tint = android.content.res.ColorStateList.valueOf(cText)
+
+        findViewById<android.widget.TextClock>(R.id.clock)?.setTextColor(cText)
+        for (id in intArrayOf(R.id.weatherTemp, R.id.weatherDesc, R.id.musicTitle, R.id.odoTotal)) {
+            findViewById<TextView>(id)?.setTextColor(cText)
+        }
+        for (id in intArrayOf(R.id.weatherRange, R.id.musicArtist, R.id.musicElapsed,
+                R.id.musicTotal, R.id.lblOdo, R.id.lblTrip)) {
+            findViewById<TextView>(id)?.setTextColor(cDim)
+        }
+        findViewById<TextView>(R.id.odoTrip)?.setTextColor(cAccent)
+        musicSource.setTextColor(cAccent)
+        tintSourceIcon(musicSource, cAccent)
+        for (id in intArrayOf(R.id.btnApps, R.id.btnMapToggle, R.id.btnMapStyle, R.id.btnPhone,
+                R.id.btnPrev, R.id.btnPlay, R.id.btnNext, R.id.btnMusic, R.id.btnTripReset)) {
+            findViewById<android.widget.ImageButton>(id)?.imageTintList = tint
+        }
+        findViewById<View>(R.id.btnPlay)
+            ?.setBackgroundResource(if (dayTheme) R.drawable.bg_circle_day else R.drawable.bg_circle)
+        findViewById<View>(R.id.odoBox)
+            ?.setBackgroundResource(if (dayTheme) R.drawable.bg_odo_day else R.drawable.bg_odo)
+        findViewById<android.widget.ProgressBar>(R.id.musicProgress)?.progressBackgroundTintList =
+            android.content.res.ColorStateList.valueOf(
+                if (dayTheme) Color.parseColor("#AEB3BA") else getColor(R.color.card_stroke))
+        // Etiquetas de los accesos directos
+        findViewById<android.view.ViewGroup>(R.id.dock)?.let { dock ->
+            val lblColor = if (dayTheme) Color.parseColor("#2E333A") else Color.parseColor("#CFD8E3")
+            for (i in 0 until dock.childCount) {
+                dock.getChildAt(i).findViewById<TextView>(R.id.tileLabel)?.setTextColor(lblColor)
+            }
+        }
+    }
+
+    /** Tiñe el ícono (drawableStart) del origen de la música. */
+    private fun tintSourceIcon(tv: TextView, color: Int) {
+        for (d in tv.compoundDrawables) d?.setTint(color)
     }
 
     // ---------- GPS ----------

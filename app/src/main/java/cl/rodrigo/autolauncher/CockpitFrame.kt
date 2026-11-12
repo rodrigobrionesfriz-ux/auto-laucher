@@ -22,7 +22,7 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
             if (n != (field * SEGMENTS).roundToInt()) { field = v; invalidate() } else field = v
         }
 
-    /** Modo día: fondo gris claro (los paneles siguen oscuros para el contraste). */
+    /** Modo día: fondo y paneles en gris claro con textos oscuros. */
     var day = false
         set(v) {
             if (field != v) {
@@ -96,7 +96,10 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
         path.reset()
         path.moveTo(w * 0.33f, 0f); path.lineTo(w * 0.375f, h * 0.108f)
         path.lineTo(w * 0.625f, h * 0.108f); path.lineTo(w * 0.67f, 0f)
-        pPanel.shader = LinearGradient(0f, 0f, 0f, h * 0.108f, Color.parseColor("#1E1F22"), Color.parseColor("#111214"), Shader.TileMode.CLAMP)
+        pPanel.shader = if (day)
+            LinearGradient(0f, 0f, 0f, h * 0.108f, Color.parseColor("#F1F3F6"), Color.parseColor("#E0E3E8"), Shader.TileMode.CLAMP)
+        else
+            LinearGradient(0f, 0f, 0f, h * 0.108f, Color.parseColor("#1E1F22"), Color.parseColor("#111214"), Shader.TileMode.CLAMP)
         canvas.drawPath(path, pPanel)
         ledEdge(canvas, path)
 
@@ -104,7 +107,10 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
         path.reset()
         path.moveTo(w * 0.30f, h); path.lineTo(w * 0.34f, h * 0.875f)
         path.lineTo(w * 0.66f, h * 0.875f); path.lineTo(w * 0.70f, h)
-        pPanel.shader = LinearGradient(0f, h * 0.875f, 0f, h, Color.parseColor("#1A1B1E"), Color.parseColor("#0C0C0D"), Shader.TileMode.CLAMP)
+        pPanel.shader = if (day)
+            LinearGradient(0f, h * 0.875f, 0f, h, Color.parseColor("#EDEFF3"), Color.parseColor("#DADDE2"), Shader.TileMode.CLAMP)
+        else
+            LinearGradient(0f, h * 0.875f, 0f, h, Color.parseColor("#1A1B1E"), Color.parseColor("#0C0C0D"), Shader.TileMode.CLAMP)
         canvas.drawPath(path, pPanel)
         ledEdge(canvas, path)
     }
@@ -115,10 +121,15 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
         path.moveTo(x(18f), h * 0.13f); path.lineTo(x(pw * 0.78f), h * 0.10f)
         path.lineTo(x(pw), h * 0.20f); path.lineTo(x(pw), h * 0.80f)
         path.lineTo(x(pw * 0.78f), h * 0.88f); path.lineTo(x(18f), h * 0.86f); path.close()
-        pPanel.shader = LinearGradient(x(0f), 0f, x(pw), 0f,
-            Color.parseColor("#1C1D20"), Color.parseColor("#0D0D0F"), Shader.TileMode.CLAMP)
+        pPanel.shader = if (day)
+            LinearGradient(x(0f), 0f, x(pw), 0f,
+                Color.parseColor("#F0F2F5"), Color.parseColor("#E1E4E9"), Shader.TileMode.CLAMP)
+        else
+            LinearGradient(x(0f), 0f, x(pw), 0f,
+                Color.parseColor("#1C1D20"), Color.parseColor("#0D0D0F"), Shader.TileMode.CLAMP)
         canvas.drawPath(path, pPanel)
         // Textura de líneas diagonales muy suaves dentro del panel
+        pLines.color = if (day) Color.argb(12, 0, 0, 0) else Color.argb(10, 255, 255, 255)
         canvas.save()
         canvas.clipPath(path)
         var k = -h
