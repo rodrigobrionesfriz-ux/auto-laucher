@@ -41,9 +41,12 @@ class MainActivity : Activity() {
     private var vuBar: LedBar? = null
     private val audio = AudioLevel()
     private var musicPlaying = false
+    private var speaker: SpeakerView? = null
     private val vuTicker = object : Runnable {
         override fun run() {
-            vuBar?.level = audio.read(musicPlaying)
+            val lvl = audio.read(musicPlaying)
+            vuBar?.level = lvl
+            speaker?.let { if (it.visibility == View.VISIBLE) it.setLevel(lvl) }
             handler.postDelayed(this, 33)
         }
     }
@@ -133,6 +136,7 @@ class MainActivity : Activity() {
         musicArtist = findViewById(R.id.musicArtist)
         btnPlay = findViewById(R.id.btnPlay)
         musicArt = findViewById(R.id.musicArt)
+        speaker = findViewById(R.id.speaker)
         musicProgress = findViewById(R.id.musicProgress)
         musicElapsed = findViewById(R.id.musicElapsed)
         musicTotal = findViewById(R.id.musicTotal)
@@ -1034,6 +1038,14 @@ class MainActivity : Activity() {
     private fun showArt(bmp: android.graphics.Bitmap?) {
         if (bmp === artShown && (bmp != null || musicArt.drawable != null)) return
         artShown = bmp
+        if (bmp == null && speaker != null) {
+            // Sin carátula: parlante de estudio que late con la música
+            musicArt.visibility = View.GONE
+            speaker?.visibility = View.VISIBLE
+            return
+        }
+        speaker?.visibility = View.GONE
+        musicArt.visibility = View.VISIBLE
         val pad = if (bmp == null) (40 * resources.displayMetrics.density).toInt() else 0
         musicArt.setPadding(pad, pad, pad, pad)
         if (bmp == null) {

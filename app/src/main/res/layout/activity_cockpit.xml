@@ -226,6 +226,12 @@
                         android:scaleType="centerCrop"
                         android:src="@drawable/ic_music"
                         android:tint="@color/text_dim" />
+
+                    <cl.rodrigo.autolauncher.SpeakerView
+                        android:id="@+id/speaker"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:visibility="gone" />
                 </cl.rodrigo.autolauncher.CircleFrame>
 
                 <LinearLayout
