@@ -59,6 +59,10 @@ class TachView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         invalidate()
     }
 
+    /** Modo día: textos y segmentos apagados en gris oscuro, para fondo claro. */
+    var day = false
+        set(v) { if (field != v) { field = v; invalidate() } }
+
     private val pSeg = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pText = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
     private val pBox = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -85,10 +89,11 @@ class TachView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         for (i in 0 until n) {
             val v = (i + 1) * 200f
             val on = i < lit
+            val offC = if (day) Color.argb(40, 0, 0, 0) else Color.argb(26, 255, 255, 255)
             pSeg.color = when {
                 v > 5000 -> if (on) Color.parseColor("#FF4A3D") else Color.argb(70, 255, 74, 61)
-                v > 4000 -> if (on) Color.parseColor("#FFB547") else Color.argb(26, 255, 255, 255)
-                else -> if (on) Color.parseColor("#A6E8C6") else Color.argb(26, 255, 255, 255)
+                v > 4000 -> if (on) Color.parseColor("#FFB547") else offC
+                else -> if (on) (if (day) Color.parseColor("#4FB98C") else Color.parseColor("#A6E8C6")) else offC
             }
             // los segmentos crecen un poco hacia la derecha
             val grow = (barB - barT) * (0.55f + 0.45f * i / n)
@@ -101,14 +106,15 @@ class TachView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         pText.textSize = 12 * dp
         for (i in 1..6) {
             val x = barL + (barR - barL) * i * 1000f / maxRpm
-            pText.color = if (i >= 5) Color.parseColor("#FF5A5F") else Color.parseColor("#D2D6DB")
+            pText.color = if (i >= 5) Color.parseColor("#FF5A5F")
+                else if (day) Color.parseColor("#3A4046") else Color.parseColor("#D2D6DB")
             canvas.drawText(i.toString(), x.coerceAtMost(barR - 4 * dp), barB + 15 * dp, pText)
         }
 
         // Texto inferior: rpm estimadas
         pText.typeface = medium
         pText.textSize = 10 * dp
-        pText.color = Color.parseColor("#8996A5")
+        pText.color = if (day) Color.parseColor("#565F6A") else Color.parseColor("#8996A5")
         pText.textAlign = Paint.Align.LEFT
         val r = (shownRpm / 10).roundToInt() * 10
         canvas.drawText(String.format(Locale("es", "CL"), "x1000 rpm · %,d (estimado)", r), barL, h - 6 * dp, pText)

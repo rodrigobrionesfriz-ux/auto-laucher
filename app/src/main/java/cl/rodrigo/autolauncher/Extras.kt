@@ -22,6 +22,10 @@ object Prefs {
     fun nightMode(ctx: Context): String = p(ctx).getString("night_mode", NIGHT_AUTO) ?: NIGHT_AUTO
     fun setNightMode(ctx: Context, v: String) = p(ctx).edit().putString("night_mode", v).apply()
 
+    /** Fondo del cockpit: "dark" (oscuro), "light" (gris claro) o "auto" (claro de día). */
+    fun theme(ctx: Context): String = p(ctx).getString("theme", "dark") ?: "dark"
+    fun setTheme(ctx: Context, v: String) = p(ctx).edit().putString("theme", v).apply()
+
     fun cockpit(ctx: Context): Boolean = p(ctx).getBoolean("cockpit", true)
     fun setCockpit(ctx: Context, v: Boolean) = p(ctx).edit().putBoolean("cockpit", v).apply()
 

@@ -33,6 +33,7 @@ class MainActivity : Activity() {
     private lateinit var gauge: Gauge
     private var frame: CockpitFrame? = null
     private var speedBar: LedBar? = null
+    private var tach: TachView? = null
     private var mapPanel: MapPanel? = null
     private var callPanel: CallPanel? = null
     private var showMap = false
@@ -108,7 +109,7 @@ class MainActivity : Activity() {
         vuBar = findViewById<LedBar>(R.id.vuBar)?.apply { vu = true }
         audio.mode = Prefs.vuMode(this)
         speedBar?.limit = Prefs.speedLimit(this)
-        val tach = findViewById<TachView>(R.id.tach)
+        tach = findViewById(R.id.tach)
         (gaugeView as? CockpitGauge)?.onShown = {
             speedBar?.level = it
             tach?.setSpeed(it * 220f)
@@ -376,6 +377,7 @@ class MainActivity : Activity() {
             "Diagnóstico",
             "Vúmetro: " + when (Prefs.vuMode(this)) { "sim" -> "Ritmo simulado"; "off" -> "Apagado"; else -> "Automático" },
             "Llamadas: aprender con una llamada de prueba",
+            "Fondo: " + when (Prefs.theme(this)) { "light" -> "Gris claro"; "auto" -> "Automático (claro de día)"; else -> "Oscuro" },
         )
         AlertDialog.Builder(this).setItems(items) { _, which ->
             when (which) {
@@ -407,6 +409,12 @@ class MainActivity : Activity() {
                         Prefs.setVuMode(this, m); audio.mode = m
                     }.show()
                 7 -> learnCalls()
+                8 -> AlertDialog.Builder(this)
+                    .setItems(arrayOf("Oscuro", "Gris claro", "Automático (claro de día, oscuro de noche)")) { _, w ->
+                        Prefs.setTheme(this, listOf("dark", "light", "auto")[w])
+                        nightCheckedAt = 0
+                        applyNight(force = true)
+                    }.show()
             }
         }.show()
     }
@@ -784,6 +792,20 @@ class MainActivity : Activity() {
         lp.screenBrightness = if (night) 0.12f
             else android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         window.attributes = lp
+        applyTheme(night)
+    }
+
+    /** Fondo claro u oscuro según la preferencia de tema (el modo "auto" sigue al sol). */
+    private fun applyTheme(night: Boolean) {
+        val dayTheme = when (Prefs.theme(this)) {
+            "light" -> true
+            "auto" -> !night
+            else -> false
+        }
+        frame?.day = dayTheme
+        tach?.day = dayTheme
+        speedBar?.day = dayTheme
+        vuBar?.day = dayTheme
     }
 
     // ---------- GPS ----------

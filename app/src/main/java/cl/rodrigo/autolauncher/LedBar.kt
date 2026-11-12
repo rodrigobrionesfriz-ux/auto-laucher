@@ -20,6 +20,10 @@ class LedBar @JvmOverloads constructor(context: Context, attrs: AttributeSet? = 
     var limit = 100
     var maxSpeed = 220
 
+    /** Modo día: segmentos apagados oscuros y blanco reemplazado por gris, para fondo claro. */
+    var day = false
+        set(v) { if (field != v) { field = v; invalidate() } }
+
     /** 0..1 */
     var level = 0f
         set(v) {
@@ -50,7 +54,7 @@ class LedBar @JvmOverloads constructor(context: Context, attrs: AttributeSet? = 
         return when {
             v > limit -> danger
             v >= limit - 10 -> warn
-            else -> white
+            else -> if (day) Color.parseColor("#596068") else white
         }
     }
 
@@ -70,7 +74,7 @@ class LedBar @JvmOverloads constructor(context: Context, attrs: AttributeSet? = 
             p.color = when {
                 i < lit -> segColor(i)
                 vu && i == peakSeg && peak > 0.05f -> segColor(i)
-                else -> off
+                else -> if (day) Color.argb(36, 0, 0, 0) else off
             }
             canvas.drawRoundRect(rect, 2f, 2f, p)
         }

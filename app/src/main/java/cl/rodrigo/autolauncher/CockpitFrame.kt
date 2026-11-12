@@ -22,6 +22,16 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
             if (n != (field * SEGMENTS).roundToInt()) { field = v; invalidate() } else field = v
         }
 
+    /** Modo día: fondo gris claro (los paneles siguen oscuros para el contraste). */
+    var day = false
+        set(v) {
+            if (field != v) {
+                field = v
+                if (width > 0) buildShaders(width.toFloat(), height.toFloat())
+                invalidate()
+            }
+        }
+
     private val pBg = Paint()
     private val pPanel = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pLed = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -34,22 +44,41 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
     private fun ledEdge(canvas: Canvas, p: Path) {
         // Sombra proyectada
         canvas.save(); canvas.translate(0f, 3f)
-        pLed.strokeWidth = 9f; pLed.color = Color.argb(70, 0, 0, 0); canvas.drawPath(p, pLed)
+        pLed.strokeWidth = 9f; pLed.color = Color.argb(if (day) 50 else 70, 0, 0, 0); canvas.drawPath(p, pLed)
         canvas.restore()
-        // Halo del LED
-        pLed.strokeWidth = 11f; pLed.color = Color.argb(22, 170, 178, 188); canvas.drawPath(p, pLed)
-        pLed.strokeWidth = 6f; pLed.color = Color.argb(55, 185, 192, 202); canvas.drawPath(p, pLed)
-        // Núcleo
-        pLed.strokeWidth = 2.8f; pLed.color = Color.argb(170, 203, 209, 218); canvas.drawPath(p, pLed)
-        pLed.strokeWidth = 1.3f; pLed.color = Color.parseColor("#F2F5F9"); canvas.drawPath(p, pLed)
+        if (day) {
+            // Sobre fondo claro: halo gris medio y núcleo blanco
+            pLed.strokeWidth = 11f; pLed.color = Color.argb(30, 70, 76, 84); canvas.drawPath(p, pLed)
+            pLed.strokeWidth = 6f; pLed.color = Color.argb(70, 86, 92, 100); canvas.drawPath(p, pLed)
+            pLed.strokeWidth = 2.8f; pLed.color = Color.argb(200, 122, 128, 136); canvas.drawPath(p, pLed)
+            pLed.strokeWidth = 1.3f; pLed.color = Color.parseColor("#FBFCFE"); canvas.drawPath(p, pLed)
+        } else {
+            // Halo del LED
+            pLed.strokeWidth = 11f; pLed.color = Color.argb(22, 170, 178, 188); canvas.drawPath(p, pLed)
+            pLed.strokeWidth = 6f; pLed.color = Color.argb(55, 185, 192, 202); canvas.drawPath(p, pLed)
+            // Núcleo
+            pLed.strokeWidth = 2.8f; pLed.color = Color.argb(170, 203, 209, 218); canvas.drawPath(p, pLed)
+            pLed.strokeWidth = 1.3f; pLed.color = Color.parseColor("#F2F5F9"); canvas.drawPath(p, pLed)
+        }
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        pBg.shader = LinearGradient(0f, 0f, 0f, h.toFloat(),
-            Color.parseColor("#0B0B0C"), Color.parseColor("#000000"), Shader.TileMode.CLAMP)
-        // Luz gris suave detrás del velocímetro
-        pSpot.shader = android.graphics.RadialGradient(w / 2f, h * 0.48f, h * 0.62f,
-            Color.argb(46, 160, 166, 174), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        buildShaders(w.toFloat(), h.toFloat())
+    }
+
+    private fun buildShaders(w: Float, h: Float) {
+        if (day) {
+            pBg.shader = LinearGradient(0f, 0f, 0f, h,
+                Color.parseColor("#DCDFE4"), Color.parseColor("#BDC1C8"), Shader.TileMode.CLAMP)
+            pSpot.shader = android.graphics.RadialGradient(w / 2f, h * 0.48f, h * 0.62f,
+                Color.argb(110, 255, 255, 255), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        } else {
+            pBg.shader = LinearGradient(0f, 0f, 0f, h,
+                Color.parseColor("#0B0B0C"), Color.parseColor("#000000"), Shader.TileMode.CLAMP)
+            // Luz gris suave detrás del velocímetro
+            pSpot.shader = android.graphics.RadialGradient(w / 2f, h * 0.48f, h * 0.62f,
+                Color.argb(46, 160, 166, 174), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        }
     }
 
     private val pSpot = Paint(Paint.ANTI_ALIAS_FLAG)
