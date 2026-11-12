@@ -94,6 +94,7 @@ class CockpitGauge @JvmOverloads constructor(
     private val pFace = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pRing = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val pLedRing = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val pBand = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pLine = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val pFill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pRoad = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -329,8 +330,15 @@ class CockpitGauge @JvmOverloads constructor(
 
     /** Anillo exterior de brújula: gira para que la dirección de avance quede arriba. */
     private fun drawCompass(canvas: Canvas) {
-        pLine.color = if (day) Color.parseColor("#AEB3BA") else Color.parseColor("#34363A"); pLine.strokeWidth = 1.5f
+        // Franja de fondo azul marino: contrasta con la banda menta en ambos temas
+        pBand.style = Paint.Style.STROKE
+        pBand.strokeWidth = r * 0.098f
+        pBand.color = if (day) Color.parseColor("#2C3E55") else Color.parseColor("#1C2A3C")
+        canvas.drawCircle(cx, cy, r * 0.924f, pBand)
+        // Filos de la franja
+        pLine.color = Color.parseColor("#0E1826"); pLine.strokeWidth = 1.5f
         canvas.drawCircle(cx, cy, r * 0.875f, pLine)
+        canvas.drawCircle(cx, cy, r * 0.973f, pLine)
         pText.typeface = tfBold
         pText.textSize = r * 0.105f
         var d = 0
@@ -341,10 +349,11 @@ class CockpitGauge @JvmOverloads constructor(
                 val name = compass[d / 45]
                 var diff = kotlin.math.abs(((d - bearing) % 360 + 360) % 360)
                 if (diff > 180) diff = 360 - diff
+                // Sobre azul marino siempre van colores claros
                 pText.color = when {
-                    diff < 22.5f -> cAccent()
+                    diff < 22.5f -> colAccent
                     name == "N" -> colDanger
-                    else -> cLabel()
+                    else -> Color.parseColor("#D8E0EA")
                 }
                 val rr = r * 0.925f
                 val ly = cy + rr * sa - (pText.descent() + pText.ascent()) / 2
@@ -354,7 +363,7 @@ class CockpitGauge @JvmOverloads constructor(
                 canvas.restore()
             } else {
                 val major = d % 15 == 0
-                pTick.color = if (major) cLabel() else cDim()
+                pTick.color = if (major) Color.parseColor("#C9D3DF") else Color.parseColor("#76859A")
                 pTick.strokeWidth = if (major) r * 0.008f else r * 0.005f
                 val r1 = r * 0.965f; val r2 = if (major) r * 0.905f else r * 0.935f
                 canvas.drawLine(cx + r1 * ca, cy + r1 * sa, cx + r2 * ca, cy + r2 * sa, pTick)
@@ -367,7 +376,7 @@ class CockpitGauge @JvmOverloads constructor(
         path.lineTo(cx - r * 0.03f, cy - r * 0.84f)
         path.lineTo(cx + r * 0.03f, cy - r * 0.84f)
         path.close()
-        pFill.color = cAccent()
+        pFill.color = colAccent
         canvas.drawPath(path, pFill)
     }
 
