@@ -94,7 +94,7 @@ class CockpitGauge @JvmOverloads constructor(
     private val pFace = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pRing = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val pLedRing = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-    private val pBand = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val pCompBand = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pLine = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val pFill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pRoad = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -331,10 +331,10 @@ class CockpitGauge @JvmOverloads constructor(
     /** Anillo exterior de brújula: gira para que la dirección de avance quede arriba. */
     private fun drawCompass(canvas: Canvas) {
         // Franja de fondo azul marino: contrasta con la banda menta en ambos temas
-        pBand.style = Paint.Style.STROKE
-        pBand.strokeWidth = r * 0.098f
-        pBand.color = if (day) Color.parseColor("#2C3E55") else Color.parseColor("#1C2A3C")
-        canvas.drawCircle(cx, cy, r * 0.924f, pBand)
+        pCompBand.style = Paint.Style.STROKE
+        pCompBand.strokeWidth = r * 0.098f
+        pCompBand.color = if (day) Color.parseColor("#2C3E55") else Color.parseColor("#1C2A3C")
+        canvas.drawCircle(cx, cy, r * 0.924f, pCompBand)
         // Filos de la franja
         pLine.color = Color.parseColor("#0E1826"); pLine.strokeWidth = 1.5f
         canvas.drawCircle(cx, cy, r * 0.875f, pLine)
