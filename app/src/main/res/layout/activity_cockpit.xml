@@ -313,14 +313,15 @@
             android:layout_height="76dp"
             android:orientation="horizontal">
 
-            <!-- Tacómetro estimado -->
+            <!-- Tacómetro estimado: calcula rpm/marcha y alimenta el sub-dial del velocímetro -->
             <cl.rodrigo.autolauncher.TachView
                 android:id="@+id/tach"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="0.29"
                 android:layout_marginStart="30dp"
-                android:layout_marginEnd="20dp" />
+                android:layout_marginEnd="20dp"
+                android:visibility="invisible" />
 
             <LinearLayout
                 android:layout_width="0dp"

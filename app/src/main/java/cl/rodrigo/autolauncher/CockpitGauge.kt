@@ -322,6 +322,82 @@ class CockpitGauge @JvmOverloads constructor(
 
     private fun ang(v: Float) = 135f + 270f * v / maxSpeed
 
+    // ---- Tacómetro integrado (1 a 6 x1000 rpm, rojo desde 4,5) ----
+    private var tachRpm = 0.8f      // en miles, suavizado
+    private var tachGear = 1
+
+    /** Recibe rpm estimadas y marcha; se dibuja como sub-dial dentro del velocímetro. */
+    fun setTach(rpm: Float, gear: Int) {
+        val t = (rpm / 1000f).coerceIn(0.75f, 6f)
+        tachRpm += (t - tachRpm) * 0.25f
+        tachGear = gear
+    }
+
+    private fun angT(x: Float) = 135f + 270f * (x - 1f) / 5f
+
+    private fun drawTach(canvas: Canvas) {
+        // Arco base y zona roja (desde 4,5)
+        val ra = r * 0.535f
+        arcRect.set(cx - ra, cy - ra, cx + ra, cy + ra)
+        pLine.strokeWidth = r * 0.010f
+        pLine.color = if (day) Color.argb(110, 100, 108, 120) else Color.argb(110, 150, 160, 175)
+        canvas.drawArc(arcRect, 135f, 270f, false, pLine)
+        pLine.strokeWidth = r * 0.022f
+        pLine.color = Color.parseColor("#E63A2E")
+        canvas.drawArc(arcRect, angT(4.5f), 270f * 1.5f / 5f, false, pLine)
+
+        // Marcas y números
+        pText.typeface = tfBold
+        pText.textSize = r * 0.062f
+        pTick.strokeCap = Paint.Cap.BUTT
+        var i = 10
+        while (i <= 60) {
+            val xv = i / 10f
+            val red = xv >= 4.5f
+            val major = i % 10 == 0
+            val a = Math.toRadians(angT(xv).toDouble())
+            val ca = cos(a).toFloat(); val sa = sin(a).toFloat()
+            val r1 = r * 0.525f; val r2 = if (major) r * 0.468f else r * 0.492f
+            pTick.strokeWidth = if (major) r * 0.014f else r * 0.008f
+            pTick.color = when {
+                red -> Color.parseColor("#FF5A5F")
+                day -> Color.parseColor("#4A5560")
+                else -> Color.parseColor("#C9D3DF")
+            }
+            canvas.drawLine(cx + r1 * ca, cy + r1 * sa, cx + r2 * ca, cy + r2 * sa, pTick)
+            if (major) {
+                pText.color = when {
+                    red -> Color.parseColor("#FF5A5F")
+                    day -> Color.parseColor("#3A4046")
+                    else -> Color.parseColor("#AEB9C6")
+                }
+                val ly = cy + r * 0.425f * sa - (pText.descent() + pText.ascent()) / 2
+                canvas.drawText((i / 10).toString(), cx + r * 0.425f * ca, ly, pText)
+            }
+            i += 5
+        }
+
+        // Aguja del tacómetro (ámbar, corta)
+        val a = Math.toRadians(angT(tachRpm).toDouble())
+        val ca = cos(a).toFloat(); val sa = sin(a).toFloat()
+        pTick.strokeCap = Paint.Cap.ROUND
+        pTick.strokeWidth = r * 0.022f
+        pTick.color = Color.argb(90, 0, 0, 0)
+        canvas.drawLine(cx + r * 0.28f * ca, cy + r * 0.28f * sa + r * 0.008f,
+            cx + r * 0.49f * ca, cy + r * 0.49f * sa + r * 0.008f, pTick)
+        pTick.strokeWidth = r * 0.016f
+        pTick.color = Color.parseColor("#FFB547")
+        canvas.drawLine(cx + r * 0.28f * ca, cy + r * 0.28f * sa,
+            cx + r * 0.49f * ca, cy + r * 0.49f * sa, pTick)
+        pTick.strokeCap = Paint.Cap.BUTT
+
+        // Marcha actual (la D de Orbitron parece O, va en fuente normal)
+        pText.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        pText.textSize = r * 0.07f
+        pText.color = Color.parseColor("#FFB547")
+        canvas.drawText("D$tachGear", cx - r * 0.43f, cy + r * 0.16f, pText)
+    }
+
     private fun speedColor(v: Float, base: Int) = when {
         v > limit -> colDanger
         v >= limit - 10 -> colWarn
@@ -479,6 +555,9 @@ class CockpitGauge @JvmOverloads constructor(
             v += 10
         }
 
+        // Tacómetro integrado entre los números y el centro
+        drawTach(canvas)
+
         // Aguja roja con brillo
         val a = Math.toRadians(ang(shown).toDouble())
         val ca = cos(a).toFloat(); val sa = sin(a).toFloat()
@@ -492,12 +571,13 @@ class CockpitGauge @JvmOverloads constructor(
             path.close()
             canvas.drawPath(path, pFill)
         }
+        // (más corta para no pasar sobre el tacómetro)
         pFill.color = Color.argb(60, 255, 40, 20)
-        needle(r * 0.40f, r * 0.88f, r * 0.06f, r * 0.025f)
+        needle(r * 0.56f, r * 0.88f, r * 0.05f, r * 0.025f)
         pFill.color = Color.parseColor("#FF2A14")
-        needle(r * 0.42f, r * 0.86f, r * 0.03f, r * 0.008f)
+        needle(r * 0.57f, r * 0.86f, r * 0.028f, r * 0.008f)
         pFill.color = Color.parseColor("#FF7A66")
-        needle(r * 0.45f, r * 0.84f, r * 0.008f, r * 0.003f)
+        needle(r * 0.585f, r * 0.84f, r * 0.008f, r * 0.003f)
 
         // Textos
         pText.typeface = tfNormal

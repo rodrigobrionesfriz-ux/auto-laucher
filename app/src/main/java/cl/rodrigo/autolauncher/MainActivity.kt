@@ -114,9 +114,14 @@ class MainActivity : Activity() {
         audio.mode = Prefs.vuMode(this)
         speedBar?.limit = Prefs.speedLimit(this)
         tach = findViewById(R.id.tach)
-        (gaugeView as? CockpitGauge)?.onShown = {
-            speedBar?.level = it
-            tach?.setSpeed(it * 220f)
+        (gaugeView as? CockpitGauge)?.let { g ->
+            g.onShown = {
+                speedBar?.level = it
+                tach?.let { t ->
+                    t.setSpeed(it * 220f)
+                    g.setTach(t.rpm, t.gear)
+                }
+            }
         }
         findViewById<View>(R.id.btnPhone)?.setOnClickListener {
             Apps.slotFor("phone")?.let { Apps.open(this, it) {} }
