@@ -32,6 +32,16 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
             }
         }
 
+    /** Fondo aurora: degradado violeta y azul con destellos (usa los paneles claros). */
+    var aurora = false
+        set(v) {
+            if (field != v) {
+                field = v
+                if (width > 0) buildShaders(width.toFloat(), height.toFloat())
+                invalidate()
+            }
+        }
+
     private val pBg = Paint()
     private val pPanel = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pLed = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -87,6 +97,7 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
     private var bgDay: android.graphics.Bitmap? = null
     private fun buildDayBg(w: Int, h: Int) {
         if (w <= 0 || h <= 0) return
+        if (aurora) { buildAuroraBg(w, h); return }
         bgDay?.recycle()
         val bmp = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
@@ -120,6 +131,47 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
         bgDay = bmp
     }
 
+    /** Fondo aurora: violeta a azul en diagonal, con brillos rosa y celeste y haces de luz. */
+    private fun buildAuroraBg(w: Int, h: Int) {
+        bgDay?.recycle()
+        val bmp = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val wf = w.toFloat(); val hf = h.toFloat()
+        val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        // Degradado base en diagonal
+        p.shader = LinearGradient(0f, 0f, wf, hf,
+            intArrayOf(Color.parseColor("#6E4FD4"), Color.parseColor("#4C5BDA"), Color.parseColor("#2E7FD8")),
+            floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, wf, hf, p)
+        // Brillo rosado arriba a la izquierda
+        p.shader = android.graphics.RadialGradient(wf * 0.18f, hf * 0.12f, hf * 0.75f,
+            Color.argb(95, 255, 160, 235), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, wf, hf, p)
+        // Brillo celeste abajo a la derecha
+        p.shader = android.graphics.RadialGradient(wf * 0.86f, hf * 0.82f, hf * 0.85f,
+            Color.argb(85, 90, 220, 255), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, wf, hf, p)
+        p.shader = null
+        // Haces de luz diagonales
+        val pl = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND
+        }
+        c.save()
+        c.rotate(-20f, wf * 0.5f, hf * 0.5f)
+        for ((i, fx) in floatArrayOf(0.22f, 0.46f, 0.68f, 0.86f).withIndex()) {
+            pl.strokeWidth = hf * (if (i % 2 == 0) 0.10f else 0.045f)
+            pl.color = Color.argb(if (i % 2 == 0) 20 else 34, 255, 255, 255)
+            c.drawLine(wf * fx - hf * 0.3f, -hf * 0.3f, wf * fx + hf * 0.3f, hf * 1.3f, pl)
+        }
+        c.restore()
+        // Penumbra suave abajo para asentar los controles
+        p.shader = LinearGradient(0f, hf * 0.72f, 0f, hf,
+            Color.TRANSPARENT, Color.argb(70, 18, 16, 48), Shader.TileMode.CLAMP)
+        c.drawRect(0f, hf * 0.72f, wf, hf, p)
+        p.shader = null
+        bgDay = bmp
+    }
+
     private val pSpot = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pLines = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeWidth = 1f; color = Color.argb(10, 255, 255, 255) }
 
@@ -142,7 +194,11 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
         path.moveTo(x(18f), h * 0.13f); path.lineTo(x(pw * 0.78f), h * 0.10f)
         path.lineTo(x(pw), h * 0.20f); path.lineTo(x(pw), h * 0.80f)
         path.lineTo(x(pw * 0.78f), h * 0.88f); path.lineTo(x(18f), h * 0.86f); path.close()
-        pPanel.shader = if (day)
+        pPanel.shader = if (aurora)
+            // Panel "vidrio": blanco translúcido que deja ver la aurora
+            LinearGradient(x(0f), 0f, x(pw), 0f,
+                Color.argb(222, 246, 248, 252), Color.argb(208, 232, 236, 245), Shader.TileMode.CLAMP)
+        else if (day)
             LinearGradient(x(0f), 0f, x(pw), 0f,
                 Color.parseColor("#F0F2F5"), Color.parseColor("#E1E4E9"), Shader.TileMode.CLAMP)
         else

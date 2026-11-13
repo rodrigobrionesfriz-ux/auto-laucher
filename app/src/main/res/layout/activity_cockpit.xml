@@ -165,11 +165,11 @@
                     android:layout_height="match_parent" />
 
                 <!-- Mapa (se muestra en lugar del velocímetro) -->
-                <cl.rodrigo.autolauncher.CircleFrame
+                <cl.rodrigo.autolauncher.RoundRectFrame
                     android:id="@+id/mapBox"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
-                    android:layout_gravity="center_horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="6dp"
                     android:background="#0B0B0C"
                     android:visibility="gone" />
 

@@ -16,6 +16,20 @@ open class SquareFrame @JvmOverloads constructor(context: Context, attrs: Attrib
     }
 }
 
+/** Marco rectangular con esquinas redondeadas (para el mapa). */
+class RoundRectFrame @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
+    FrameLayout(context, attrs) {
+    init {
+        val radius = 20f * resources.displayMetrics.density
+        outlineProvider = object : android.view.ViewOutlineProvider() {
+            override fun getOutline(view: android.view.View, outline: android.graphics.Outline) {
+                outline.setRoundRect(0, 0, view.width, view.height, radius)
+            }
+        }
+        clipToOutline = true
+    }
+}
+
 /** Marco circular para la carátula del diseño cockpit. */
 class CircleFrame @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
     SquareFrame(context, attrs) {

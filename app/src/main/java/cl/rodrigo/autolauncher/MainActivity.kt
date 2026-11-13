@@ -383,7 +383,7 @@ class MainActivity : Activity() {
             "Diagnóstico",
             "Vúmetro: " + when (Prefs.vuMode(this)) { "sim" -> "Ritmo simulado"; "off" -> "Apagado"; else -> "Automático" },
             "Llamadas: aprender con una llamada de prueba",
-            "Fondo: " + when (Prefs.theme(this)) { "light" -> "Gris claro"; "auto" -> "Automático (claro de día)"; else -> "Oscuro" },
+            "Fondo: " + when (Prefs.theme(this)) { "light" -> "Gris claro"; "aurora" -> "Aurora"; "auto" -> "Automático (claro de día)"; else -> "Oscuro" },
         )
         AlertDialog.Builder(this).setItems(items) { _, which ->
             when (which) {
@@ -416,8 +416,8 @@ class MainActivity : Activity() {
                     }.show()
                 7 -> learnCalls()
                 8 -> AlertDialog.Builder(this)
-                    .setItems(arrayOf("Oscuro", "Gris claro", "Automático (claro de día, oscuro de noche)")) { _, w ->
-                        Prefs.setTheme(this, listOf("dark", "light", "auto")[w])
+                    .setItems(arrayOf("Oscuro", "Gris claro", "Aurora (violeta y azul)", "Automático (claro de día, oscuro de noche)")) { _, w ->
+                        Prefs.setTheme(this, listOf("dark", "light", "aurora", "auto")[w])
                         nightCheckedAt = 0
                         applyNight(force = true)
                     }.show()
@@ -546,17 +546,10 @@ class MainActivity : Activity() {
     // ---------- Mapa en lugar del velocímetro ----------
 
     private fun setupMap(g: CockpitGauge?) {
-        val box = findViewById<CircleFrame>(R.id.mapBox) ?: return
+        val box = findViewById<RoundRectFrame>(R.id.mapBox) ?: return
         val btn = findViewById<ImageButton>(R.id.btnMapToggle) ?: return
         g ?: return
-        // El círculo del mapa calza exactamente con el dial
-        g.onSized = {
-            val d = (g.dialR * 2).toInt()
-            val lp = box.layoutParams as android.widget.FrameLayout.LayoutParams
-            lp.width = d; lp.height = d
-            lp.topMargin = (g.dialCy - g.dialR).toInt()
-            box.layoutParams = lp
-        }
+        // El mapa es rectangular y ocupa todo el espacio central
         showMap = getSharedPreferences("launcher", MODE_PRIVATE).getBoolean("show_map", false)
         val styleBtn = findViewById<ImageButton>(R.id.btnMapStyle)
         var mapDark = getSharedPreferences("launcher", MODE_PRIVATE).getBoolean("map_dark", true)
@@ -803,24 +796,29 @@ class MainActivity : Activity() {
 
     /** Fondo claro u oscuro según la preferencia de tema (el modo "auto" sigue al sol). */
     private fun applyTheme(night: Boolean) {
-        val dayTheme = when (Prefs.theme(this)) {
-            "light" -> true
+        val theme = Prefs.theme(this)
+        val dayTheme = when (theme) {
+            "light", "aurora" -> true
             "auto" -> !night
             else -> false
         }
+        val auroraF = theme == "aurora"
+        frame?.aurora = auroraF
         frame?.day = dayTheme
-        tach?.day = dayTheme
-        speedBar?.day = dayTheme
-        vuBar?.day = dayTheme
+        // Sobre la aurora, lo que flota en el fondo va en claro (como en modo oscuro)
+        tach?.day = dayTheme && !auroraF
+        speedBar?.day = dayTheme && !auroraF
+        vuBar?.day = dayTheme && !auroraF
         (gauge as? CockpitGauge)?.day = dayTheme
         if (!cockpit) return
 
         val cText = if (dayTheme) Color.parseColor("#22262B") else getColor(R.color.text)
         val cDim = if (dayTheme) Color.parseColor("#566069") else getColor(R.color.text_dim)
         val cAccent = if (dayTheme) Color.parseColor("#0C8F70") else getColor(R.color.accent)
-        val tint = android.content.res.ColorStateList.valueOf(cText)
+        val onBg = if (auroraF) Color.parseColor("#F4F6FA") else cText
+        val tint = android.content.res.ColorStateList.valueOf(onBg)
 
-        findViewById<android.widget.TextClock>(R.id.clock)?.setTextColor(cText)
+        findViewById<android.widget.TextClock>(R.id.clock)?.setTextColor(onBg)
         for (id in intArrayOf(R.id.weatherTemp, R.id.weatherDesc, R.id.musicTitle, R.id.odoTotal)) {
             findViewById<TextView>(id)?.setTextColor(cText)
         }
@@ -836,7 +834,7 @@ class MainActivity : Activity() {
             findViewById<android.widget.ImageButton>(id)?.imageTintList = tint
         }
         findViewById<View>(R.id.btnPlay)
-            ?.setBackgroundResource(if (dayTheme) R.drawable.bg_circle_day else R.drawable.bg_circle)
+            ?.setBackgroundResource(if (dayTheme && !auroraF) R.drawable.bg_circle_day else R.drawable.bg_circle)
         findViewById<View>(R.id.odoBox)
             ?.setBackgroundResource(if (dayTheme) R.drawable.bg_odo_day else R.drawable.bg_odo)
         findViewById<android.widget.ProgressBar>(R.id.musicProgress)?.progressBackgroundTintList =
