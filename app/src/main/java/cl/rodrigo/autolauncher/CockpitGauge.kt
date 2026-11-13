@@ -337,7 +337,7 @@ class CockpitGauge @JvmOverloads constructor(
 
     private fun drawTach(canvas: Canvas) {
         // Arco base y zona roja (desde 4,5)
-        val ra = r * 0.535f
+        val ra = r * 0.50f
         arcRect.set(cx - ra, cy - ra, cx + ra, cy + ra)
         pLine.strokeWidth = r * 0.010f
         pLine.color = if (day) Color.argb(110, 100, 108, 120) else Color.argb(110, 150, 160, 175)
@@ -357,7 +357,7 @@ class CockpitGauge @JvmOverloads constructor(
             val major = i % 10 == 0
             val a = Math.toRadians(angT(xv).toDouble())
             val ca = cos(a).toFloat(); val sa = sin(a).toFloat()
-            val r1 = r * 0.525f; val r2 = if (major) r * 0.468f else r * 0.492f
+            val r1 = r * 0.49f; val r2 = if (major) r * 0.435f else r * 0.458f
             pTick.strokeWidth = if (major) r * 0.014f else r * 0.008f
             pTick.color = when {
                 red -> Color.parseColor("#FF5A5F")
@@ -371,8 +371,8 @@ class CockpitGauge @JvmOverloads constructor(
                     day -> Color.parseColor("#3A4046")
                     else -> Color.parseColor("#AEB9C6")
                 }
-                val ly = cy + r * 0.425f * sa - (pText.descent() + pText.ascent()) / 2
-                canvas.drawText((i / 10).toString(), cx + r * 0.425f * ca, ly, pText)
+                val ly = cy + r * 0.385f * sa - (pText.descent() + pText.ascent()) / 2
+                canvas.drawText((i / 10).toString(), cx + r * 0.385f * ca, ly, pText)
             }
             i += 5
         }
@@ -383,12 +383,12 @@ class CockpitGauge @JvmOverloads constructor(
         pTick.strokeCap = Paint.Cap.ROUND
         pTick.strokeWidth = r * 0.022f
         pTick.color = Color.argb(90, 0, 0, 0)
-        canvas.drawLine(cx + r * 0.28f * ca, cy + r * 0.28f * sa + r * 0.008f,
-            cx + r * 0.49f * ca, cy + r * 0.49f * sa + r * 0.008f, pTick)
+        canvas.drawLine(cx + r * 0.26f * ca, cy + r * 0.26f * sa + r * 0.008f,
+            cx + r * 0.455f * ca, cy + r * 0.455f * sa + r * 0.008f, pTick)
         pTick.strokeWidth = r * 0.016f
         pTick.color = Color.parseColor("#FFB547")
-        canvas.drawLine(cx + r * 0.28f * ca, cy + r * 0.28f * sa,
-            cx + r * 0.49f * ca, cy + r * 0.49f * sa, pTick)
+        canvas.drawLine(cx + r * 0.26f * ca, cy + r * 0.26f * sa,
+            cx + r * 0.455f * ca, cy + r * 0.455f * sa, pTick)
         pTick.strokeCap = Paint.Cap.BUTT
 
         // Marcha actual (la D de Orbitron parece O, va en fuente normal)
@@ -549,8 +549,8 @@ class CockpitGauge @JvmOverloads constructor(
             pTick.color = Color.WHITE; pTick.strokeWidth = tw
             canvas.drawLine(cx + r1 * ca, cy + r1 * sa, cx + r2 * ca, cy + r2 * sa, pTick)
             if (major) {
-                val ly = cy + r * 0.6f * sa - (pText.descent() + pText.ascent()) / 2
-                canvas.drawText(v.toString(), cx + r * 0.6f * ca, ly, pText)
+                val ly = cy + r * 0.635f * sa - (pText.descent() + pText.ascent()) / 2
+                canvas.drawText(v.toString(), cx + r * 0.635f * ca, ly, pText)
             }
             v += 10
         }
@@ -573,11 +573,11 @@ class CockpitGauge @JvmOverloads constructor(
         }
         // (más corta para no pasar sobre el tacómetro)
         pFill.color = Color.argb(60, 255, 40, 20)
-        needle(r * 0.56f, r * 0.88f, r * 0.05f, r * 0.025f)
+        needle(r * 0.53f, r * 0.88f, r * 0.05f, r * 0.025f)
         pFill.color = Color.parseColor("#FF2A14")
-        needle(r * 0.57f, r * 0.86f, r * 0.028f, r * 0.008f)
+        needle(r * 0.54f, r * 0.86f, r * 0.028f, r * 0.008f)
         pFill.color = Color.parseColor("#FF7A66")
-        needle(r * 0.585f, r * 0.84f, r * 0.008f, r * 0.003f)
+        needle(r * 0.555f, r * 0.84f, r * 0.008f, r * 0.003f)
 
         // Textos
         pText.typeface = tfNormal
