@@ -388,7 +388,7 @@ class MainActivity : Activity() {
             "Diagnóstico",
             "Vúmetro: " + when (Prefs.vuMode(this)) { "sim" -> "Ritmo simulado"; "off" -> "Apagado"; else -> "Automático" },
             "Llamadas: aprender con una llamada de prueba",
-            "Fondo: " + when (Prefs.theme(this)) { "light" -> "Gris claro"; "aurora" -> "Aurora"; "auto" -> "Automático (claro de día)"; else -> "Oscuro" },
+            "Fondo: " + when (Prefs.theme(this)) { "light" -> "Gris claro"; "aurora" -> "Aurora"; "graphite" -> "Grafito"; "auto" -> "Automático (claro de día)"; else -> "Oscuro" },
         )
         AlertDialog.Builder(this).setItems(items) { _, which ->
             when (which) {
@@ -421,8 +421,8 @@ class MainActivity : Activity() {
                     }.show()
                 7 -> learnCalls()
                 8 -> AlertDialog.Builder(this)
-                    .setItems(arrayOf("Oscuro", "Gris claro", "Aurora (violeta y azul)", "Automático (claro de día, oscuro de noche)")) { _, w ->
-                        Prefs.setTheme(this, listOf("dark", "light", "aurora", "auto")[w])
+                    .setItems(arrayOf("Oscuro", "Gris claro", "Aurora (violeta y azul)", "Grafito (negro con trama gris)", "Automático (claro de día, oscuro de noche)")) { _, w ->
+                        Prefs.setTheme(this, listOf("dark", "light", "aurora", "graphite", "auto")[w])
                         nightCheckedAt = 0
                         applyNight(force = true)
                     }.show()
@@ -809,6 +809,7 @@ class MainActivity : Activity() {
         }
         val auroraF = theme == "aurora"
         frame?.aurora = auroraF
+        frame?.graphite = theme == "graphite"
         frame?.day = dayTheme
         // Sobre la aurora, lo que flota en el fondo va en claro (como en modo oscuro)
         tach?.day = dayTheme && !auroraF
