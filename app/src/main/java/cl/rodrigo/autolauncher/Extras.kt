@@ -29,6 +29,10 @@ object Prefs {
     fun cockpit(ctx: Context): Boolean = p(ctx).getBoolean("cockpit", true)
     fun setCockpit(ctx: Context, v: Boolean) = p(ctx).edit().putBoolean("cockpit", v).apply()
 
+    /** Diseño Moderno: tarjetas flotantes con sombra y mapa al centro (usa la lógica del cockpit). */
+    fun modern(ctx: Context): Boolean = p(ctx).getBoolean("modern", false)
+    fun setModern(ctx: Context, v: Boolean) = p(ctx).edit().putBoolean("modern", v).apply()
+
     fun logoText(ctx: Context, side: String): String = p(ctx).getString("logo_text_$side", "") ?: ""
     fun setLogoText(ctx: Context, side: String, v: String) = p(ctx).edit().putString("logo_text_$side", v).apply()
 

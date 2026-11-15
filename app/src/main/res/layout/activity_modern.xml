@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Diseño Moderno: tarjetas flotantes con sombra sobre el fondo elegido.
+  Usa los mismos IDs que el cockpit para compartir toda la lógica.
+  Centro: mapa en vivo (alternable con el velocímetro).
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <cl.rodrigo.autolauncher.CockpitFrame
+        android:id="@+id/frame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Vúmetro oculto: solo alimenta el parlante animado -->
+    <cl.rodrigo.autolauncher.LedBar
+        android:id="@+id/vuBar"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:visibility="invisible" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingStart="18dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="16dp">
+
+        <!-- Encabezado: saludo, fecha, hora y Apps -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/greeting"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:shadowColor="#66000000"
+                    android:shadowDy="2"
+                    android:shadowRadius="6"
+                    android:text="Hola"
+                    android:textColor="@color/text"
+                    android:textSize="26sp"
+                    android:textStyle="bold" />
+
+                <TextClock
+                    android:id="@+id/dateClock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:format12Hour="EEEE d 'de' MMMM"
+                    android:format24Hour="EEEE d 'de' MMMM"
+                    android:textColor="@color/text_dim"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <TextClock
+                android:id="@+id/clock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="14dp"
+                android:format12Hour="HH:mm"
+                android:format24Hour="HH:mm"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.04"
+                android:shadowColor="#66000000"
+                android:shadowDy="2"
+                android:shadowRadius="6"
+                android:textColor="@color/text"
+                android:textSize="40sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btnApps"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_round"
+                android:contentDescription="Apps"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_apps"
+                android:tint="@color/text" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="8dp"
+            android:layout_weight="1"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="horizontal">
+
+            <!-- Columna izquierda: clima + accesos -->
+            <LinearLayout
+                android:layout_width="290dp"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/weatherBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_plain"
+                    android:elevation="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="14dp"
+                    android:tag="card">
+
+                    <ImageView
+                        android:id="@+id/weatherIcon"
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
+                        android:layout_marginEnd="6dp"
+                        android:src="@drawable/wx_cloud"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/weatherTemp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--°"
+                        android:textColor="@color/text"
+                        android:textSize="34sp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/weatherDesc"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="Esperando ubicación"
+                            android:textColor="@color/text"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/weatherRange"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:textColor="@color/text_dim"
+                            android:textSize="14sp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/weatherPlace"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_weight="1"
+                    android:elevation="10dp"
+                    android:paddingTop="12dp"
+                    android:tag="card">
+
+                    <GridLayout
+                        android:id="@+id/dock"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:columnCount="3" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- Centro: mapa en vivo (o velocímetro) -->
+            <FrameLayout
+                android:id="@+id/centerBox"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="14dp"
+                android:layout_weight="1"
+                android:elevation="10dp"
+                android:tag="card">
+
+                <cl.rodrigo.autolauncher.CockpitGauge
+                    android:id="@+id/gauge"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="10dp" />
+
+                <cl.rodrigo.autolauncher.RoundRectFrame
+                    android:id="@+id/mapBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#0B0B0C"
+                    android:visibility="gone" />
+
+                <ImageButton
+                    android:id="@+id/btnMapToggle"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:layout_gravity="top|start"
+                    android:layout_margin="10dp"
+                    android:background="@drawable/bg_chip"
+                    android:contentDescription="Mapa o velocímetro"
+                    android:padding="11dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_map"
+                    android:tag="chip"
+                    android:tint="#F2F5F8" />
+
+                <ImageButton
+                    android:id="@+id/btnMapStyle"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="10dp"
+                    android:background="@drawable/bg_chip"
+                    android:contentDescription="Mapa claro u oscuro"
+                    android:padding="11dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_contrast"
+                    android:tag="chip"
+                    android:tint="#F2F5F8"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <!-- Columna derecha: reproductor + odómetro -->
+            <LinearLayout
+                android:layout_width="290dp"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/musicText"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:elevation="10dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
+                    android:paddingStart="18dp"
+                    android:paddingTop="16dp"
+                    android:paddingEnd="18dp"
+                    android:paddingBottom="10dp"
+                    android:tag="card">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <cl.rodrigo.autolauncher.CircleFrame
+                            android:id="@+id/musicInfo"
+                            android:layout_width="112dp"
+                            android:layout_height="112dp"
+                            android:background="@drawable/bg_art_round"
+                            android:foreground="@drawable/bg_round">
+
+                            <ImageView
+                                android:id="@+id/musicArt"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:padding="26dp"
+                                android:scaleType="centerCrop"
+                                android:src="@drawable/ic_music"
+                                android:tint="@color/text_dim" />
+
+                            <cl.rodrigo.autolauncher.SpeakerView
+                                android:id="@+id/speaker"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:visibility="gone" />
+                        </cl.rodrigo.autolauncher.CircleFrame>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/musicSource"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:drawableStart="@drawable/ic_music"
+                                android:drawablePadding="4dp"
+                                android:drawableTint="@color/accent"
+                                android:maxLines="1"
+                                android:text="Música"
+                                android:textColor="@color/accent"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/musicTitle"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="marquee"
+                                android:marqueeRepeatLimit="marquee_forever"
+                                android:singleLine="true"
+                                android:text="Sin reproducción"
+                                android:textColor="@color/text"
+                                android:textSize="19sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/musicArtist"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:textColor="@color/text_dim"
+                                android:textSize="14sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/musicProgress"
+                        style="@android:style/Widget.Material.ProgressBar.Horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="4dp"
+                        android:layout_marginTop="16dp"
+                        android:max="1000"
+                        android:progressBackgroundTint="@color/card_stroke"
+                        android:progressTint="@color/accent" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/musicElapsed"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textColor="@color/text_dim"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/musicTotal"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_dim"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <Space
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <ImageButton
+                            android:id="@+id/btnPhone"
+                            android:layout_width="46dp"
+                            android:layout_height="46dp"
+                            android:background="@drawable/bg_round"
+                            android:contentDescription="Teléfono"
+                            android:padding="12dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_phone"
+                            android:tint="@color/text" />
+
+                        <ImageButton
+                            android:id="@+id/btnPrev"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_marginStart="4dp"
+                            android:background="@drawable/bg_round"
+                            android:contentDescription="Anterior"
+                            android:padding="12dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_prev"
+                            android:tint="@color/text" />
+
+                        <ImageButton
+                            android:id="@+id/btnPlay"
+                            android:layout_width="62dp"
+                            android:layout_height="62dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_circle"
+                            android:contentDescription="Reproducir"
+                            android:padding="15dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_play"
+                            android:tint="@color/text" />
+
+                        <ImageButton
+                            android:id="@+id/btnNext"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:background="@drawable/bg_round"
+                            android:contentDescription="Siguiente"
+                            android:padding="12dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_next"
+                            android:tint="@color/text" />
+
+                        <ImageButton
+                            android:id="@+id/btnMusic"
+                            android:layout_width="46dp"
+                            android:layout_height="46dp"
+                            android:layout_marginStart="4dp"
+                            android:background="@drawable/bg_round"
+                            android:contentDescription="Música"
+                            android:padding="12dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_music"
+                            android:tint="@color/text" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Odómetro -->
+                <LinearLayout
+                    android:id="@+id/odoBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:elevation="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="6dp"
+                    android:paddingBottom="10dp"
+                    android:tag="card">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/lblOdo"
+                                android:layout_width="58dp"
+                                android:layout_height="wrap_content"
+                                android:text="ODO"
+                                android:textColor="@color/text_dim"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/odoTotal"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:maxLines="1"
+                                android:text="--"
+                                android:textColor="@color/text"
+                                android:textSize="17sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/lblTrip"
+                                android:layout_width="58dp"
+                                android:layout_height="wrap_content"
+                                android:text="VIAJE"
+                                android:textColor="@color/text_dim"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/odoTrip"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:maxLines="1"
+                                android:text="0,0 km"
+                                android:textColor="@color/accent"
+                                android:textSize="17sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/btnTripReset"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_round"
+                        android:contentDescription="Reiniciar viaje"
+                        android:padding="12dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_reset"
+                        android:tint="@color/text" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Tacómetro oculto: calcula rpm y marcha para el velocímetro -->
+    <cl.rodrigo.autolauncher.TachView
+        android:id="@+id/tach"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:visibility="invisible" />
+</FrameLayout>

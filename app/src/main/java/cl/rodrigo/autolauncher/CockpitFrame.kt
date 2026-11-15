@@ -42,6 +42,10 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
             }
         }
 
+    /** false = solo fondo, sin paneles hexagonales (diseño Moderno). */
+    var panels = true
+        set(v) { if (field != v) { field = v; invalidate() } }
+
     /** Fondo grafito: negro con la trama de la aurora en degradados grises (tema oscuro). */
     var graphite = false
         set(v) {
@@ -234,6 +238,7 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
         if ((day || graphite) && bd != null) canvas.drawBitmap(bd, 0f, 0f, null)
         else canvas.drawRect(0f, 0f, w, h, pBg)
         canvas.drawRect(0f, 0f, w, h, pSpot)
+        if (!panels) return
         val pw = w * 0.29f
         panel(canvas, w, h, pw, true)
         panel(canvas, w, h, pw, false)

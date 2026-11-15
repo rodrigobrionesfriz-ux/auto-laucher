@@ -25,6 +25,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import kotlin.math.roundToInt
+import java.util.Calendar
 import java.util.Locale
 
 class MainActivity : Activity() {
@@ -51,6 +52,7 @@ class MainActivity : Activity() {
         }
     }
     private var cockpit = false
+    private var modern = false
     private lateinit var weatherTemp: TextView
     private lateinit var weatherDesc: TextView
     private lateinit var weatherPlace: TextView
@@ -95,10 +97,15 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        cockpit = Prefs.cockpit(this)
+        modern = Prefs.modern(this)
+        cockpit = Prefs.cockpit(this) || modern
         Apps.cockpit = cockpit
         Icons.round = false
-        setContentView(if (cockpit) R.layout.activity_cockpit else R.layout.activity_main)
+        setContentView(when {
+            modern -> R.layout.activity_modern
+            cockpit -> R.layout.activity_cockpit
+            else -> R.layout.activity_main
+        })
 
         val gaugeView = findViewById<View>(R.id.gauge)
         gauge = gaugeView as Gauge
@@ -107,6 +114,7 @@ class MainActivity : Activity() {
         if (cockpit) loadCarPhoto()
         logoRefreshers["car"] = { setCarMode("custom") }
         frame = findViewById(R.id.frame)
+        if (modern) frame?.panels = false
         setupMap(gaugeView as? CockpitGauge)
         if (cockpit) setupCallPanel()
         speedBar = findViewById(R.id.speedBar)
@@ -382,7 +390,7 @@ class MainActivity : Activity() {
         val items = arrayOf(
             "Modo noche: $modeName",
             "Aviso de velocidad: ${Prefs.speedLimit(this)} km/h",
-            "Diseño: ${if (cockpit) "Cockpit" else "Clásico"}",
+            "Diseño: ${if (modern) "Moderno" else if (cockpit) "Cockpit" else "Clásico"}",
             "Luces del vehículo",
             "Buscar actualización (tienes ${Updater.currentName(this)})",
             "Diagnóstico",
@@ -408,8 +416,13 @@ class MainActivity : Activity() {
                         }.show()
                 }
                 2 -> AlertDialog.Builder(this)
-                    .setItems(arrayOf("Clásico", "Cockpit")) { _, w ->
-                        if ((w == 1) != cockpit) { Prefs.setCockpit(this, w == 1); recreate() }
+                    .setItems(arrayOf("Clásico", "Cockpit", "Moderno (tarjetas flotantes y mapa)")) { _, w ->
+                        val cur = if (modern) 2 else if (cockpit) 1 else 0
+                        if (w != cur) {
+                            Prefs.setCockpit(this, w >= 1)
+                            Prefs.setModern(this, w == 2)
+                            recreate()
+                        }
                     }.show()
                 3 -> lightsMenu()
                 4 -> Updater.checkNow(this)
@@ -555,7 +568,8 @@ class MainActivity : Activity() {
         val btn = findViewById<ImageButton>(R.id.btnMapToggle) ?: return
         g ?: return
         // El mapa es rectangular y ocupa todo el espacio central
-        showMap = getSharedPreferences("launcher", MODE_PRIVATE).getBoolean("show_map", false)
+        val mapKey = if (modern) "show_map_modern" else "show_map"
+        showMap = getSharedPreferences("launcher", MODE_PRIVATE).getBoolean(mapKey, modern)
         val styleBtn = findViewById<ImageButton>(R.id.btnMapStyle)
         var mapDark = getSharedPreferences("launcher", MODE_PRIVATE).getBoolean("map_dark", true)
         styleBtn?.setOnClickListener {
@@ -578,7 +592,7 @@ class MainActivity : Activity() {
         }
         btn.setOnClickListener {
             showMap = !showMap
-            getSharedPreferences("launcher", MODE_PRIVATE).edit().putBoolean("show_map", showMap).apply()
+            getSharedPreferences("launcher", MODE_PRIVATE).edit().putBoolean(mapKey, showMap).apply()
             apply()
         }
         apply()
@@ -773,6 +787,7 @@ class MainActivity : Activity() {
         val now = System.currentTimeMillis()
         if (!force && now - nightCheckedAt < 60_000L) return
         nightCheckedAt = now
+        if (modern) findViewById<TextView>(R.id.greeting)?.text = greetingText()
         val night = when (Prefs.nightMode(this)) {
             Prefs.NIGHT_DAY -> false
             Prefs.NIGHT_ON -> true
@@ -822,7 +837,8 @@ class MainActivity : Activity() {
         val cDim = if (dayTheme) Color.parseColor("#566069") else getColor(R.color.text_dim)
         val cAccent = if (dayTheme) Color.parseColor("#0C8F70") else getColor(R.color.accent)
         val onBg = if (auroraF) Color.parseColor("#F4F6FA") else cText
-        val tint = android.content.res.ColorStateList.valueOf(onBg)
+        // En el diseño Moderno los controles van dentro de tarjetas: siguen el color de la tarjeta
+        val tint = android.content.res.ColorStateList.valueOf(if (modern) cText else onBg)
 
         findViewById<android.widget.TextClock>(R.id.clock)?.setTextColor(onBg)
         for (id in intArrayOf(R.id.weatherTemp, R.id.weatherDesc, R.id.musicTitle, R.id.odoTotal)) {
@@ -835,14 +851,22 @@ class MainActivity : Activity() {
         findViewById<TextView>(R.id.odoTrip)?.setTextColor(cAccent)
         musicSource.setTextColor(cAccent)
         tintSourceIcon(musicSource, cAccent)
-        for (id in intArrayOf(R.id.btnApps, R.id.btnMapToggle, R.id.btnMapStyle, R.id.btnPhone,
-                R.id.btnPrev, R.id.btnPlay, R.id.btnNext, R.id.btnMusic, R.id.btnTripReset)) {
+        val btnIds = if (modern) intArrayOf(R.id.btnPhone, R.id.btnPrev, R.id.btnPlay, R.id.btnNext,
+                R.id.btnMusic, R.id.btnTripReset)
+            else intArrayOf(R.id.btnApps, R.id.btnMapToggle, R.id.btnMapStyle, R.id.btnPhone,
+                R.id.btnPrev, R.id.btnPlay, R.id.btnNext, R.id.btnMusic, R.id.btnTripReset)
+        for (id in btnIds) {
             findViewById<android.widget.ImageButton>(id)?.imageTintList = tint
         }
+        val lightCards = dayTheme && (modern || !auroraF)
         findViewById<View>(R.id.btnPlay)
-            ?.setBackgroundResource(if (dayTheme && !auroraF) R.drawable.bg_circle_day else R.drawable.bg_circle)
-        findViewById<View>(R.id.odoBox)
-            ?.setBackgroundResource(if (dayTheme) R.drawable.bg_odo_day else R.drawable.bg_odo)
+            ?.setBackgroundResource(if (lightCards) R.drawable.bg_circle_day else R.drawable.bg_circle)
+        if (modern) {
+            styleModern(dayTheme, auroraF, onBg, cDim)
+        } else {
+            findViewById<View>(R.id.odoBox)
+                ?.setBackgroundResource(if (dayTheme) R.drawable.bg_odo_day else R.drawable.bg_odo)
+        }
         findViewById<android.widget.ProgressBar>(R.id.musicProgress)?.progressBackgroundTintList =
             android.content.res.ColorStateList.valueOf(
                 if (dayTheme) Color.parseColor("#AEB3BA") else getColor(R.color.card_stroke))
@@ -854,6 +878,49 @@ class MainActivity : Activity() {
             }
         }
     }
+
+    /** Diseño Moderno: tarjetas flotantes con esquinas redondeadas, borde fino y sombra. */
+    private fun styleModern(dayTheme: Boolean, auroraF: Boolean, onBg: Int, cDim: Int) {
+        val d = resources.displayMetrics.density
+        val cardColor = when {
+            auroraF -> Color.argb(228, 250, 251, 253)
+            dayTheme -> Color.parseColor("#FAFBFC")
+            else -> Color.argb(236, 24, 26, 31)
+        }
+        val stroke = if (dayTheme) Color.argb(36, 0, 0, 0) else Color.argb(34, 255, 255, 255)
+        fun walk(v: View) {
+            if (v.tag == "card") {
+                val shape = android.graphics.drawable.GradientDrawable().apply {
+                    cornerRadius = 20f * d
+                    setColor(cardColor)
+                    setStroke((1f * d).toInt().coerceAtLeast(1), stroke)
+                }
+                v.background = if (v.isClickable || v.id == R.id.weatherBox || v.id == R.id.odoBox)
+                    android.graphics.drawable.RippleDrawable(
+                        android.content.res.ColorStateList.valueOf(Color.argb(50, 62, 224, 180)), shape, null)
+                else shape
+                v.outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
+            }
+            if (v is android.view.ViewGroup) for (i in 0 until v.childCount) walk(v.getChildAt(i))
+        }
+        walk(window.decorView)
+        // Lo que va directo sobre el fondo
+        findViewById<android.widget.ImageButton>(R.id.btnApps)?.imageTintList =
+            android.content.res.ColorStateList.valueOf(onBg)
+        findViewById<TextView>(R.id.greeting)?.let {
+            it.setTextColor(onBg)
+            it.text = greetingText()
+        }
+        findViewById<android.widget.TextClock>(R.id.dateClock)?.setTextColor(
+            if (auroraF) Color.parseColor("#DDE3F0") else cDim)
+    }
+
+    private fun greetingText(): String =
+        when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+            in 5..11 -> "Buenos días"
+            in 12..19 -> "Buenas tardes"
+            else -> "Buenas noches"
+        }
 
     /** Tiñe el ícono (drawableStart) del origen de la música. */
     private fun tintSourceIcon(tv: TextView, color: Int) {
