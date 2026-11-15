@@ -33,7 +33,7 @@
         <!-- Encabezado: saludo, fecha, hora y Apps -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="64dp"
+            android:layout_height="74dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -53,18 +53,18 @@
                     android:shadowRadius="6"
                     android:text="Hola"
                     android:textColor="@color/text"
-                    android:textSize="26sp"
+                    android:textSize="31sp"
                     android:textStyle="bold" />
 
                 <TextClock
                     android:id="@+id/dateClock"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
+                    android:layout_marginTop="3dp"
                     android:format12Hour="EEEE d 'de' MMMM"
                     android:format24Hour="EEEE d 'de' MMMM"
                     android:textColor="@color/text_dim"
-                    android:textSize="14sp" />
+                    android:textSize="18sp" />
             </LinearLayout>
 
             <TextClock
