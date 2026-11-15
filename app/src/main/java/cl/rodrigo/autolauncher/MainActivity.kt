@@ -100,6 +100,7 @@ class MainActivity : Activity() {
         modern = Prefs.modern(this)
         cockpit = Prefs.cockpit(this) || modern
         Apps.cockpit = cockpit
+        Greeter.speakOnStart(this)
         Icons.round = false
         setContentView(when {
             modern -> R.layout.activity_modern
@@ -397,6 +398,8 @@ class MainActivity : Activity() {
             "Vúmetro: " + when (Prefs.vuMode(this)) { "sim" -> "Ritmo simulado"; "off" -> "Apagado"; else -> "Automático" },
             "Llamadas: aprender con una llamada de prueba",
             "Fondo: " + when (Prefs.theme(this)) { "light" -> "Gris claro"; "aurora" -> "Aurora"; "graphite" -> "Grafito"; "auto" -> "Automático (claro de día)"; else -> "Oscuro" },
+            "Saludo: " + Greeter.text(this) + (if (Greeter.voice(this)) " · con voz" else " · sin voz"),
+            "Mapa: " + when (mapMode()) { "light" -> "Claro"; "dark" -> "Oscuro"; else -> "Automático (según el fondo)" },
         )
         AlertDialog.Builder(this).setItems(items) { _, which ->
             when (which) {
@@ -438,6 +441,11 @@ class MainActivity : Activity() {
                         Prefs.setTheme(this, listOf("dark", "light", "aurora", "graphite", "auto")[w])
                         nightCheckedAt = 0
                         applyNight(force = true)
+                    }.show()
+                9 -> greetingMenu()
+                10 -> AlertDialog.Builder(this)
+                    .setItems(arrayOf("Automático (claro u oscuro según el fondo)", "Siempre claro", "Siempre oscuro")) { _, w ->
+                        setMapMode(listOf("auto", "light", "dark")[w])
                     }.show()
             }
         }.show()
@@ -571,17 +579,17 @@ class MainActivity : Activity() {
         val mapKey = if (modern) "show_map_modern" else "show_map"
         showMap = getSharedPreferences("launcher", MODE_PRIVATE).getBoolean(mapKey, modern)
         val styleBtn = findViewById<ImageButton>(R.id.btnMapStyle)
-        var mapDark = getSharedPreferences("launcher", MODE_PRIVATE).getBoolean("map_dark", true)
         styleBtn?.setOnClickListener {
-            mapDark = !mapDark
-            getSharedPreferences("launcher", MODE_PRIVATE).edit().putBoolean("map_dark", mapDark).apply()
-            mapPanel?.setDark(mapDark)
-            Toast.makeText(this, if (mapDark) "Mapa oscuro" else "Mapa claro", Toast.LENGTH_SHORT).show()
+            // Recorre: automático → claro → oscuro
+            val next = when (mapMode()) { "auto" -> "light"; "light" -> "dark"; else -> "auto" }
+            setMapMode(next)
+            Toast.makeText(this, when (next) { "light" -> "Mapa claro"; "dark" -> "Mapa oscuro"; else -> "Mapa automático (según el fondo)" },
+                Toast.LENGTH_SHORT).show()
         }
         fun apply() {
             if (showMap && mapPanel == null) {
                 mapPanel = try { MapPanel(this) } catch (e: Throwable) { null }
-                mapPanel?.let { box.addView(it, android.widget.FrameLayout.LayoutParams(-1, -1)); it.setDark(mapDark) }
+                mapPanel?.let { box.addView(it, android.widget.FrameLayout.LayoutParams(-1, -1)); it.setDark(mapDarkNow()) }
                 lastLocation?.let { mapPanel?.onLocation(it, 0) }
             }
             box.visibility = if (showMap) View.VISIBLE else View.GONE
@@ -826,6 +834,8 @@ class MainActivity : Activity() {
         frame?.aurora = auroraF
         frame?.graphite = theme == "graphite"
         frame?.day = dayTheme
+        themeIsLight = dayTheme
+        mapPanel?.setDark(mapDarkNow())
         // Sobre la aurora, lo que flota en el fondo va en claro (como en modo oscuro)
         tach?.day = dayTheme && !auroraF
         speedBar?.day = dayTheme && !auroraF
@@ -915,12 +925,47 @@ class MainActivity : Activity() {
             if (auroraF) Color.parseColor("#DDE3F0") else cDim)
     }
 
-    private fun greetingText(): String =
-        when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
-            in 5..11 -> "Buenos días"
-            in 12..19 -> "Buenas tardes"
-            else -> "Buenas noches"
-        }
+    private fun greetingText(): String = Greeter.text(this)
+
+    private fun greetingMenu() {
+        val opts = arrayOf(
+            "Cambiar nombre (ahora: ${Greeter.name(this).ifEmpty { "sin nombre" }})",
+            "Voz al iniciar: ${if (Greeter.voice(this)) "activada" else "desactivada"}",
+            "Probar la voz")
+        AlertDialog.Builder(this).setItems(opts) { _, w ->
+            when (w) {
+                0 -> {
+                    val input = android.widget.EditText(this).apply {
+                        setText(Greeter.name(this@MainActivity)); setSelection(text.length)
+                        hint = "Tu nombre"
+                        inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS
+                    }
+                    AlertDialog.Builder(this).setTitle("Nombre para el saludo").setView(input)
+                        .setPositiveButton("Guardar") { _, _ ->
+                            Greeter.setName(this, input.text.toString())
+                            findViewById<TextView>(R.id.greeting)?.text = greetingText()
+                        }
+                        .setNegativeButton("Cancelar", null).show()
+                }
+                1 -> Greeter.setVoice(this, !Greeter.voice(this))
+                2 -> Greeter.speak(this, greetingText())
+            }
+        }.show()
+    }
+
+    // ---- Tema del mapa: auto (sigue al fondo), claro u oscuro ----
+    private var themeIsLight = false
+    private fun mapMode(): String =
+        getSharedPreferences("launcher", MODE_PRIVATE).getString("map_mode", "auto") ?: "auto"
+    private fun mapDarkNow(): Boolean = when (mapMode()) {
+        "light" -> false
+        "dark" -> true
+        else -> !themeIsLight
+    }
+    private fun setMapMode(m: String) {
+        getSharedPreferences("launcher", MODE_PRIVATE).edit().putString("map_mode", m).apply()
+        mapPanel?.setDark(mapDarkNow())
+    }
 
     /** Tiñe el ícono (drawableStart) del origen de la música. */
     private fun tintSourceIcon(tv: TextView, color: Int) {
