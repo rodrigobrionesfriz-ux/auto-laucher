@@ -298,7 +298,7 @@ class MainActivity : Activity() {
         }
 
         dock.post { applyNight(force = true) }   // re-aplica el tema a las etiquetas nuevas
-        val iconPx = ((if (cockpit) 66 else 58) * resources.displayMetrics.density).toInt()
+        val iconPx = ((if (modern) 56 else if (cockpit) 66 else 58) * resources.displayMetrics.density).toInt()
         fun appIcon(pkg: String?, iv: ImageView): Boolean {
             if (pkg == null || pkg == Apps.SETTINGS) return false
             return try {
