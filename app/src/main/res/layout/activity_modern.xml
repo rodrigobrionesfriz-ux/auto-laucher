@@ -202,11 +202,11 @@
 
                             <TextView
                                 android:id="@+id/lblOdo"
-                                android:layout_width="58dp"
+                                android:layout_width="54dp"
                                 android:layout_height="wrap_content"
                                 android:text="ODO"
                                 android:textColor="@color/text_dim"
-                                android:textSize="12sp" />
+                                android:textSize="13sp" />
 
                             <TextView
                                 android:id="@+id/odoTotal"
@@ -216,7 +216,7 @@
                                 android:maxLines="1"
                                 android:text="--"
                                 android:textColor="@color/text"
-                                android:textSize="17sp" />
+                                android:textSize="21sp" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -228,11 +228,11 @@
 
                             <TextView
                                 android:id="@+id/lblTrip"
-                                android:layout_width="58dp"
+                                android:layout_width="54dp"
                                 android:layout_height="wrap_content"
                                 android:text="VIAJE"
                                 android:textColor="@color/text_dim"
-                                android:textSize="12sp" />
+                                android:textSize="13sp" />
 
                             <TextView
                                 android:id="@+id/odoTrip"
@@ -242,7 +242,7 @@
                                 android:maxLines="1"
                                 android:text="0,0 km"
                                 android:textColor="@color/accent"
-                                android:textSize="17sp" />
+                                android:textSize="21sp" />
                         </LinearLayout>
                     </LinearLayout>
 
@@ -395,8 +395,8 @@
 
                     <cl.rodrigo.autolauncher.CircleFrame
                         android:id="@+id/musicInfo"
-                        android:layout_width="128dp"
-                        android:layout_height="128dp"
+                        android:layout_width="116dp"
+                        android:layout_height="116dp"
                         android:background="@drawable/bg_art_round"
                         android:elevation="6dp"
                         android:foreground="@drawable/bg_round">
@@ -421,14 +421,22 @@
                         android:id="@+id/musicSource"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_source_chip"
                         android:drawableStart="@drawable/ic_music"
-                        android:drawablePadding="4dp"
-                        android:drawableTint="@color/accent"
+                        android:drawablePadding="6dp"
+                        android:gravity="center_vertical"
                         android:maxLines="1"
+                        android:maxWidth="240dp"
+                        android:ellipsize="end"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="3dp"
                         android:text="Música"
                         android:textColor="@color/accent"
-                        android:textSize="12sp" />
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/musicTitle"

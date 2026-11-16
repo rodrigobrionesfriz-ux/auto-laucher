@@ -1003,8 +1003,31 @@ class MainActivity : Activity() {
         mapPanel?.setDark(mapDarkNow())
     }
 
+    // ---- Origen del audio: ícono de la app (Tidal, YouTube, Spotify...) o Bluetooth ----
+    private var sourceKey: String? = null
+    private var sourceIsApp = false
+
+    private fun showSource(label: String, pkg: String?) {
+        musicSource.text = label
+        val key = (pkg ?: "") + "|" + label.substringBefore(" ·")
+        if (key == sourceKey) return
+        sourceKey = key
+        val sz = (20 * resources.displayMetrics.density).toInt()
+        var d: android.graphics.drawable.Drawable? = null
+        if (pkg != null) d = try { packageManager.getApplicationIcon(pkg) } catch (_: Exception) { null }
+        sourceIsApp = d != null
+        if (d == null) d = getDrawable(if (label.startsWith("Bluetooth")) R.drawable.ic_bt else R.drawable.ic_music)
+        d = d!!.mutate()
+        d.setBounds(0, 0, sz, sz)
+        musicSource.compoundDrawableTintList = if (sourceIsApp) null
+            else android.content.res.ColorStateList.valueOf(musicSource.currentTextColor)
+        musicSource.setCompoundDrawablesRelative(d, null, null, null)
+    }
+
     /** Tiñe el ícono (drawableStart) del origen de la música. */
     private fun tintSourceIcon(tv: TextView, color: Int) {
+        if (tv === musicSource && sourceIsApp) return   // el ícono de la app va con sus colores
+        tv.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(color)
         for (d in tv.compoundDrawables) d?.setTint(color)
     }
 
@@ -1164,7 +1187,7 @@ class MainActivity : Activity() {
         val np = Music.nowPlaying(this)
         if (np == null || np.title.isNullOrBlank()) {
             musicPlaying = false
-            musicSource.text = np?.source ?: "Música"
+            showSource(np?.source ?: "Música", np?.pkg)
             if (Music.hasAccess(this)) {
                 musicTitle.text = "Sin reproducción"
                 musicArtist.text = "Toca para abrir tu app de música"
@@ -1177,7 +1200,7 @@ class MainActivity : Activity() {
             showTimes(-1, -1)
             return
         }
-        musicSource.text = np.source
+        showSource(np.source, np.pkg)
         musicTitle.text = np.title
         musicArtist.text = listOfNotNull(np.artist, np.album).filter { it.isNotBlank() }.joinToString(" · ")
         btnPlay.setImageResource(if (np.playing) R.drawable.ic_pause else R.drawable.ic_play)

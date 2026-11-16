@@ -45,6 +45,7 @@ data class NowPlaying(
     val durationMs: Long,   // -1 si no se conoce
     val positionMs: Long,   // -1 si no se conoce
     val art: Bitmap?,
+    val pkg: String? = null,  // app que reproduce en la radio (null = Bluetooth u origen desconocido)
 )
 
 object Music {
@@ -338,6 +339,7 @@ object Music {
                 durationMs = duration,
                 positionMs = livePosition(state),
                 art = art,
+                pkg = if (label == "Bluetooth") null else c.packageName,
             )
         }
         // Música Bluetooth en radios FYT/SYU
@@ -345,7 +347,8 @@ object Music {
         // Respaldo: lo recibido por broadcast en los últimos 10 minutos
         if (bTitle.isNullOrBlank() || SystemClock.elapsedRealtime() - bAt > 600_000L) {
             return if (c != null) NowPlaying(null, null, null, appLabel(ctx, c.packageName),
-                false, -1, -1, null) else null
+                false, -1, -1, null,
+                pkg = c.packageName.takeIf { appLabel(ctx, it) != "Bluetooth" }) else null
         }
         val pos = when {
             bPosition < 0 -> -1L
