@@ -947,8 +947,8 @@ class MainActivity : Activity() {
         }
         walk(window.decorView)
         // Lo que va directo sobre el fondo
-        findViewById<android.widget.ImageButton>(R.id.btnApps)?.imageTintList =
-            android.content.res.ColorStateList.valueOf(onBg)
+        // Apps: ícono de colores sobre su propia tarjeta (sin teñir)
+        findViewById<android.widget.ImageButton>(R.id.btnApps)?.imageTintList = null
         findViewById<TextView>(R.id.greeting)?.let {
             it.setTextColor(onBg)
             it.text = greetingText()
