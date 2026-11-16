@@ -156,7 +156,7 @@ class SpeedBadge(ctx: Context) : View(ctx) {
         minOf(255, Color.red(c) + 40), minOf(255, Color.green(c) + 40), minOf(255, Color.blue(c) + 40))
 }
 
-/** Puntos cardinales alrededor del auto, girando con el rumbo, y rumbo actual arriba. */
+/** Rumbo actual (punto cardinal y grados) en una pastilla arriba del mapa. */
 class HeadingOverlay(ctx: Context, private val carOffsetY: Float) : View(ctx) {
     private var bearing = 0f
     private var shown = 0f
@@ -182,54 +182,32 @@ class HeadingOverlay(ctx: Context, private val carOffsetY: Float) : View(ctx) {
         if (kotlin.math.abs(d) > 0.5f) postInvalidateDelayed(33)
 
         val cx = width / 2f
-        val cy = height / 2f + carOffsetY
-        val r = minOf(width, height) * 0.30f
-        // Anillo
-        pLine.strokeWidth = 2f * dp
-        pLine.color = Color.argb(70, 255, 255, 255)
-        c.drawCircle(cx, cy, r, pLine)
-        pLine.color = Color.argb(60, 0, 0, 0)
-        pLine.strokeWidth = 1f * dp
-        c.drawCircle(cx, cy, r + 2f * dp, pLine)
-        // Marcas cada 15° y letras cada 45°
-        for (deg in 0 until 360 step 15) {
-            val a = Math.toRadians((deg - shown - 90).toDouble())
-            val ca = kotlin.math.cos(a).toFloat(); val sa = kotlin.math.sin(a).toFloat()
-            if (deg % 45 == 0) {
-                val name = names[deg / 45]
-                var diff = kotlin.math.abs(((deg - shown) % 360 + 360) % 360)
-                if (diff > 180) diff = 360 - diff
-                val active = diff < 22.5f
-                val tr = r + 16f * dp
-                pText.typeface = android.graphics.Typeface.DEFAULT_BOLD   // la O de Orbitron parece un 0
-                pText.textSize = (if (name.length == 1) 16f else 13f) * dp
-                // Pastilla oscura detrás de la letra para que se lea sobre cualquier mapa
-                pFill.color = when {
-                    active -> Color.parseColor("#E61FA463")
-                    else -> Color.argb(170, 16, 18, 21)
-                }
-                c.drawCircle(cx + tr * ca, cy + tr * sa, 13f * dp, pFill)
-                pText.color = when {
-                    active -> Color.WHITE
-                    name == "N" -> Color.parseColor("#FF5A5F")
-                    else -> Color.parseColor("#E6ECF2")
-                }
-                c.drawText(name, cx + tr * ca, cy + tr * sa - (pText.descent() + pText.ascent()) / 2, pText)
-            } else {
-                pLine.strokeWidth = 2f * dp
-                pLine.color = Color.argb(130, 255, 255, 255)
-                c.drawLine(cx + (r - 5f * dp) * ca, cy + (r - 5f * dp) * sa, cx + r * ca, cy + r * sa, pLine)
-            }
-        }
-        // Rumbo actual arriba, en pastilla
-        val label = names[(((shown + 22.5f) % 360) / 45).toInt() % 8] + "  " + shown.toInt() + "°"
+        // Rumbo actual arriba, en pastilla (letra normal: la O de Orbitron parece un 0)
+        val card = names[(((shown + 22.5f) % 360) / 45).toInt() % 8]
+        val deg = "${shown.toInt()}°"
+        pText.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        pText.textSize = 20f * dp
+        val w1 = pText.measureText(card)
         pText.typeface = tfBold
         pText.textSize = 15f * dp
-        val tw = pText.measureText(label)
+        val w2 = pText.measureText(deg)
+        val gap = 10f * dp
+        val tw = w1 + gap + w2
         val top = 12f * dp
-        pFill.color = Color.argb(185, 16, 18, 21)
-        c.drawRoundRect(cx - tw / 2 - 14f * dp, top, cx + tw / 2 + 14f * dp, top + 32f * dp, 16f * dp, 16f * dp, pFill)
+        val h = 40f * dp
+        pFill.color = Color.argb(195, 16, 18, 21)
+        c.drawRoundRect(cx - tw / 2 - 18f * dp, top, cx + tw / 2 + 18f * dp, top + h, h / 2, h / 2, pFill)
+        val base = top + h / 2
+        val x0 = cx - tw / 2
+        pText.textAlign = android.graphics.Paint.Align.LEFT
+        pText.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        pText.textSize = 20f * dp
+        pText.color = Color.parseColor("#3EE0B4")
+        c.drawText(card, x0, base - (pText.descent() + pText.ascent()) / 2, pText)
+        pText.typeface = tfBold
+        pText.textSize = 15f * dp
         pText.color = Color.WHITE
-        c.drawText(label, cx, top + 16f * dp - (pText.descent() + pText.ascent()) / 2, pText)
+        c.drawText(deg, x0 + w1 + gap, base - (pText.descent() + pText.ascent()) / 2, pText)
+        pText.textAlign = android.graphics.Paint.Align.CENTER
     }
 }
