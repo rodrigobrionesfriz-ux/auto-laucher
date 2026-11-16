@@ -67,6 +67,7 @@ class MainActivity : Activity() {
     private lateinit var musicElapsed: TextView
     private lateinit var musicTotal: TextView
     private var artShown: android.graphics.Bitmap? = null
+    private var artReady = false
 
     private var lm: LocationManager? = null
     private var gpsRunning = false
@@ -1212,7 +1213,10 @@ class MainActivity : Activity() {
     }
 
     private fun showArt(bmp: android.graphics.Bitmap?) {
-        if (bmp === artShown && (bmp != null || musicArt.drawable != null)) return
+        // La primera vez siempre se aplica: sin esto, al no haber carátula quedaba la nota
+        // del layout en vez del parlante animado
+        if (artReady && bmp === artShown) return
+        artReady = true
         artShown = bmp
         if (bmp == null && speaker != null) {
             // Sin carátula: parlante de estudio que late con la música

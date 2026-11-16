@@ -335,8 +335,8 @@
 
                     <cl.rodrigo.autolauncher.AnalogClockView
                         android:id="@+id/analog"
-                        android:layout_width="104dp"
-                        android:layout_height="104dp" />
+                        android:layout_width="96dp"
+                        android:layout_height="96dp" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -348,12 +348,17 @@
 
                         <TextClock
                             android:id="@+id/clock"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_width="match_parent"
+                            android:layout_height="46dp"
+                            android:autoSizeMaxTextSize="40sp"
+                            android:autoSizeMinTextSize="20sp"
+                            android:autoSizeStepGranularity="1sp"
+                            android:autoSizeTextType="uniform"
                             android:format12Hour="HH:mm"
                             android:format24Hour="HH:mm"
+                            android:gravity="end|center_vertical"
                             android:includeFontPadding="false"
-                            android:letterSpacing="0.03"
+                            android:maxLines="1"
                             android:textColor="@color/text"
                             android:textSize="40sp"
                             android:textStyle="bold" />
