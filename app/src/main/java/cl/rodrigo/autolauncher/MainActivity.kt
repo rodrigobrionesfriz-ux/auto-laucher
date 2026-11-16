@@ -850,7 +850,7 @@ class MainActivity : Activity() {
         // En el diseño Moderno los controles van dentro de tarjetas: siguen el color de la tarjeta
         val tint = android.content.res.ColorStateList.valueOf(if (modern) cText else onBg)
 
-        findViewById<android.widget.TextClock>(R.id.clock)?.setTextColor(onBg)
+        findViewById<android.widget.TextClock>(R.id.clock)?.setTextColor(if (modern) cText else onBg)
         for (id in intArrayOf(R.id.weatherTemp, R.id.weatherDesc, R.id.musicTitle, R.id.odoTotal)) {
             findViewById<TextView>(id)?.setTextColor(cText)
         }
@@ -923,6 +923,10 @@ class MainActivity : Activity() {
         }
         findViewById<android.widget.TextClock>(R.id.dateClock)?.setTextColor(
             if (auroraF) Color.parseColor("#DDE3F0") else cDim)
+        // Tarjeta del reloj (sigue el color de la tarjeta, no del fondo)
+        findViewById<AnalogClockView>(R.id.analog)?.day = dayTheme
+        for (id in intArrayOf(R.id.cardDate, R.id.cardDay))
+            findViewById<android.widget.TextClock>(id)?.setTextColor(cDim)
     }
 
     private fun greetingText(): String = Greeter.text(this)
