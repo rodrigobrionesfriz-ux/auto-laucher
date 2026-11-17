@@ -403,6 +403,7 @@ class MainActivity : Activity() {
             "Saludo: " + Greeter.text(this) + (if (Greeter.voice(this)) " · con voz" else " · sin voz"),
             "Mapa: " + when (mapMode()) { "light" -> "Claro"; "dark" -> "Oscuro"; else -> "Automático (según el fondo)" } +
                 (if (mapEngine() == "vector") " · nuevo" else " · clásico"),
+            "Limpiar caché (la app usa ${Cleaner.mb(Cleaner.usedBytes(this))})",
         )
         AlertDialog.Builder(this).setItems(items) { _, which ->
             when (which) {
@@ -462,6 +463,7 @@ class MainActivity : Activity() {
                             7 -> OfflineMaps.deleteAll(this)
                         }
                     }.show()
+                11 -> cleanCache()
             }
         }.show()
     }
@@ -1011,6 +1013,20 @@ class MainActivity : Activity() {
         "dark" -> true
         else -> !themeIsLight
     }
+    /** Limpia caché y basura; cierra el mapa mientras tanto y lo vuelve a abrir. */
+    private fun cleanCache() {
+        mapPanel?.let { p -> (p as View).let { (it.parent as? android.view.ViewGroup)?.removeView(it) }; p.destroy() }
+        mapPanel = null
+        Toast.makeText(this, "Limpiando…", Toast.LENGTH_SHORT).show()
+        Cleaner.clean(this) { freed, now ->
+            mapApply?.invoke()
+            AlertDialog.Builder(this).setTitle("Caché limpia")
+                .setMessage("Se liberaron ${Cleaner.mb(freed)}.\nAhora la app usa ${Cleaner.mb(now)}.\n\n" +
+                    "Se conservan las zonas de mapa descargadas, tus ajustes, el odómetro y tus fotos.")
+                .setPositiveButton("OK", null).show()
+        }
+    }
+
     private fun mapEngine(): String =
         getSharedPreferences("launcher", MODE_PRIVATE).getString("map_engine", "vector") ?: "vector"
 
