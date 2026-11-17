@@ -64,6 +64,8 @@ class VectorMapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
     private var bearing = 0f
     private var pending: Location? = null
     private var pendingKmh = 0
+    private val status: android.widget.TextView
+    private var lastLoc: Location? = null
 
     init {
         MapLibre.getInstance(ctx.applicationContext)
@@ -118,8 +120,6 @@ class VectorMapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
         setBackgroundColor(Color.parseColor("#0B0B0C"))
     }
 
-    private val status: android.widget.TextView
-    private var lastLoc: Location? = null
 
     /** Estilo en uso (para descargar la zona con el mismo aspecto). */
     fun currentStyle(): String = if (dark) STYLE_DARK else STYLE_LIGHT
