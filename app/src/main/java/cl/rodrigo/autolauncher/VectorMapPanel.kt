@@ -26,6 +26,27 @@ class VectorMapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
         const val STYLE_LIGHT = "https://tiles.openfreemap.org/styles/liberty"
         const val STYLE_DARK = "https://tiles.openfreemap.org/styles/dark"
 
+        private var httpReady = false
+
+        /**
+         * Cliente HTTP con identificador propio y máximo 4 conexiones simultáneas,
+         * como pide OpenFreeMap para las descargas sin conexión.
+         */
+        private fun setupHttp(ctx: Context) {
+            if (httpReady) return
+            httpReady = true
+            try {
+                val ua = "AutoLauncher/1.0 (${ctx.packageName}; Android ${android.os.Build.VERSION.SDK_INT})"
+                val client = okhttp3.OkHttpClient.Builder()
+                    .dispatcher(okhttp3.Dispatcher().apply { maxRequestsPerHost = 4 })
+                    .addNetworkInterceptor { chain ->
+                        chain.proceed(chain.request().newBuilder().header("User-Agent", ua).build())
+                    }
+                    .build()
+                org.maplibre.android.module.http.HttpRequestUtil.setOkHttpClient(client)
+            } catch (e: Throwable) { Diag.add("MAPA http: $e") }
+        }
+
         /** MapLibre 11 necesita OpenGL ES 3.0. */
         fun supported(ctx: Context): Boolean = try {
             val am = ctx.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -46,6 +67,7 @@ class VectorMapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
 
     init {
         MapLibre.getInstance(ctx.applicationContext)
+        setupHttp(ctx)
         mapView = MapView(ctx)
         mapView.onCreate(null)
         mapView.onStart()
@@ -77,8 +99,32 @@ class VectorMapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
         speedBadge = SpeedBadge(ctx)
         addView(speedBadge, LayoutParams((84 * dp).toInt(), (84 * dp).toInt(),
             Gravity.BOTTOM or Gravity.START).apply { leftMargin = (14 * dp).toInt(); bottomMargin = (14 * dp).toInt() })
+        // Estado de la descarga sin conexión (abajo a la derecha)
+        status = android.widget.TextView(ctx).apply {
+            textSize = 12f
+            setTextColor(Color.WHITE)
+            setPadding((10 * dp).toInt(), (4 * dp).toInt(), (10 * dp).toInt(), (4 * dp).toInt())
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = 12 * dp; setColor(Color.argb(190, 16, 18, 21))
+            }
+            visibility = View.GONE
+        }
+        addView(status, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
+            Gravity.BOTTOM or Gravity.END).apply { rightMargin = (12 * dp).toInt(); bottomMargin = (30 * dp).toInt() })
+        OfflineMaps.onStatus = { msg ->
+            status.text = msg ?: ""
+            status.visibility = if (msg == null) View.GONE else View.VISIBLE
+        }
         setBackgroundColor(Color.parseColor("#0B0B0C"))
     }
+
+    private val status: android.widget.TextView
+    private var lastLoc: Location? = null
+
+    /** Estilo en uso (para descargar la zona con el mismo aspecto). */
+    fun currentStyle(): String = if (dark) STYLE_DARK else STYLE_LIGHT
+
+    fun downloadNow() = OfflineMaps.downloadNow(context, lastLoc, currentStyle())
 
     private fun applyStyle() {
         val m = map ?: return
@@ -110,11 +156,14 @@ class VectorMapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
         if (!hasFix) { m.moveCamera(CameraUpdateFactory.newCameraPosition(pos)); hasFix = true }
         else m.animateCamera(CameraUpdateFactory.newCameraPosition(pos), 900)
         speedBadge.setSpeed(kmh)
+        lastLoc = loc
+        OfflineMaps.onLocation(context, loc, currentStyle())
     }
 
     override fun resume() = mapView.onResume()
     override fun pause() = mapView.onPause()
     override fun destroy() {
+        OfflineMaps.onStatus = null
         try { mapView.onPause(); mapView.onStop(); mapView.onDestroy() } catch (_: Throwable) { }
     }
 }

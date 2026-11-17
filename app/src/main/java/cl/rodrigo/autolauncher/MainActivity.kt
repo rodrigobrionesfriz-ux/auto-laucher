@@ -448,9 +448,19 @@ class MainActivity : Activity() {
                 9 -> greetingMenu()
                 10 -> AlertDialog.Builder(this)
                     .setItems(arrayOf("Automático (claro u oscuro según el fondo)", "Siempre claro", "Siempre oscuro",
-                        "Mapa nuevo (nombres de calles siempre derechos)", "Mapa clásico")) { _, w ->
-                        if (w <= 2) setMapMode(listOf("auto", "light", "dark")[w])
-                        else setMapEngine(if (w == 3) "vector" else "classic")
+                        "Mapa nuevo (nombres de calles siempre derechos)", "Mapa clásico",
+                        "Descarga automática de 20 km: " + (if (OfflineMaps.enabled(this)) "activada" else "desactivada"),
+                        "Descargar ahora la zona actual (20 km)",
+                        "Borrar mapas descargados")) { _, w ->
+                        when (w) {
+                            0, 1, 2 -> setMapMode(listOf("auto", "light", "dark")[w])
+                            3 -> setMapEngine("vector")
+                            4 -> setMapEngine("classic")
+                            5 -> OfflineMaps.setEnabled(this, !OfflineMaps.enabled(this))
+                            6 -> (mapPanel as? VectorMapPanel)?.downloadNow()
+                                ?: Toast.makeText(this, "Abre el mapa nuevo para descargar", Toast.LENGTH_SHORT).show()
+                            7 -> OfflineMaps.deleteAll(this)
+                        }
                     }.show()
             }
         }.show()

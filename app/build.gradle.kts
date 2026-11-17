@@ -47,4 +47,5 @@ dependencies {
     implementation("org.osmdroid:osmdroid-android:6.1.18")
     // Mapa vectorial: nombres de calles que se mantienen derechos al girar
     implementation("org.maplibre.gl:android-sdk:11.8.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
