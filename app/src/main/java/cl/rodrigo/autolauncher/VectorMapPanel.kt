@@ -32,7 +32,7 @@ class VectorMapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
          * Cliente HTTP con identificador propio y máximo 4 conexiones simultáneas,
          * como pide OpenFreeMap para las descargas sin conexión.
          */
-        private fun setupHttp(ctx: Context) {
+        fun setupHttp(ctx: Context) {
             if (httpReady) return
             httpReady = true
             try {
@@ -56,11 +56,13 @@ class VectorMapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
             return Math.round((17.5 - 3.5 * f) * 4) / 4.0
         }
 
+        private var glOk: Boolean? = null
+
         /** MapLibre 11 necesita OpenGL ES 3.0. */
-        fun supported(ctx: Context): Boolean = try {
+        fun supported(ctx: Context): Boolean = glOk ?: try {
             val am = ctx.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
             am.deviceConfigurationInfo.reqGlEsVersion >= 0x30000
-        } catch (_: Throwable) { false }
+        } catch (_: Throwable) { false }.also { glOk = it }
     }
 
     private val mapView: MapView
@@ -166,7 +168,6 @@ class VectorMapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
         else m.animateCamera(CameraUpdateFactory.newCameraPosition(pos), 900)
         speedBadge.setSpeed(kmh)
         lastLoc = loc
-        OfflineMaps.onLocation(context, loc, currentStyle())
     }
 
     override fun resume() = mapView.onResume()

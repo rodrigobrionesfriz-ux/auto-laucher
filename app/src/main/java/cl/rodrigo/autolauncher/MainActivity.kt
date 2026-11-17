@@ -604,8 +604,8 @@ class MainActivity : Activity() {
                 Toast.LENGTH_SHORT).show()
         }
         fun apply() {
-            // Sin conexión no se cargan los mapas: se muestra el velocímetro (salvo que lo pidas)
-            val eff = showMap && (netOnline || mapForcedOffline)
+            // Mapa o velocímetro: solo lo decide el botón (sin cambio automático por conexión)
+            val eff = showMap
             if (eff && mapPanel == null) {
                 mapPanel = createMap()
                 mapPanel?.let { box.addView(it as View, android.widget.FrameLayout.LayoutParams(-1, -1)); it.setDark(mapDarkNow()) }
@@ -618,42 +618,15 @@ class MainActivity : Activity() {
             if (eff) mapPanel?.resume() else mapPanel?.pause()
         }
         btn.setOnClickListener {
-            if (showMap && !netOnline && !mapForcedOffline) {
-                // Sin conexión y con velocímetro automático: mostrar el mapa igual (zonas ya guardadas)
-                mapForcedOffline = true
-            } else {
-                showMap = !showMap
-                mapForcedOffline = false
-                getSharedPreferences("launcher", MODE_PRIVATE).edit().putBoolean(mapKey, showMap).apply()
-            }
+            showMap = !showMap
+            getSharedPreferences("launcher", MODE_PRIVATE).edit().putBoolean(mapKey, showMap).apply()
             apply()
         }
         mapApply = { apply() }
         apply()
     }
 
-    // ---- Cobertura: sin internet el centro pasa al velocímetro ----
     private var mapApply: (() -> Unit)? = null
-    private var netOnline = true
-    private var mapForcedOffline = false
-    private var netCheckedAt = 0L
-
-    private fun checkNetwork() {
-        if (mapApply == null) return
-        val now = android.os.SystemClock.elapsedRealtime()
-        if (now - netCheckedAt < 10_000) return
-        netCheckedAt = now
-        val on = try {
-            val cm = getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-            @Suppress("DEPRECATION") cm.activeNetworkInfo?.isConnected == true
-        } catch (_: Throwable) { true }
-        if (on == netOnline) return
-        netOnline = on
-        if (on) mapForcedOffline = false
-        mapApply?.invoke()
-        if (showMap) Toast.makeText(this,
-            if (on) "Conexión recuperada: mapa" else "Sin conexión: velocímetro", Toast.LENGTH_SHORT).show()
-    }
 
     // ---------- Odómetro ----------
 
@@ -1159,6 +1132,9 @@ class MainActivity : Activity() {
         val kmh = if (loc.hasSpeed()) (loc.speed * 3.6f).roundToInt() else 0
         gauge.setSpeed(if (kmh < 2) 0 else kmh)
         mapPanel?.onLocation(loc, if (kmh < 2) 0 else kmh)
+        // Descarga de 20 km: corre aunque esté el velocímetro en pantalla
+        if (mapEngine() == "vector" && VectorMapPanel.supported(this))
+            OfflineMaps.onLocation(this, loc, if (mapDarkNow()) VectorMapPanel.STYLE_DARK else VectorMapPanel.STYLE_LIGHT)
         if (loc.hasBearing() && kmh >= 3) {
             gauge.heading = cardinal(loc.bearing)
             gauge.setBearing(loc.bearing)
@@ -1173,7 +1149,6 @@ class MainActivity : Activity() {
     // ---------- Ciclo de cada segundo ----------
 
     private fun tick() {
-        checkNetwork()
         val now = System.currentTimeMillis()
         val fixAge = now - lastFixAt
 

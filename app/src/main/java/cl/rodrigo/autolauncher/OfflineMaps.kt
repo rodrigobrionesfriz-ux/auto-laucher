@@ -27,7 +27,7 @@ import kotlin.math.cos
 object OfflineMaps {
     private const val RADIUS_KM = 20.0
     private const val REDOWNLOAD_KM = 15f
-    private const val KEEP_REGIONS = 3
+    private const val KEEP_REGIONS = 6   // 3 zonas × (claro + oscuro)
     private const val MIN_ZOOM = 8.0
     private const val MAX_ZOOM = 14.0
 
@@ -59,25 +59,36 @@ object OfflineMaps {
         if (downloading && now - startedAt < 15 * 60_000) return
         downloading = false
         val p = prefs(ctx)
+        var newZone = true
         if (p.contains("lat")) {
             val d = FloatArray(1)
             Location.distanceBetween(p.getFloat("lat", 0f).toDouble(), p.getFloat("lon", 0f).toDouble(),
                 loc.latitude, loc.longitude, d)
-            if (d[0] < REDOWNLOAD_KM * 1000 && p.getString("style", null) == styleUrl) return
+            if (d[0] < REDOWNLOAD_KM * 1000) {
+                // Misma zona: solo falta si este estilo (claro u oscuro) no se ha bajado todavía.
+                // Las piezas de calles son las mismas para ambos, así que es una descarga corta.
+                if (p.getStringSet("styles", emptySet())!!.contains(styleUrl)) return
+                newZone = false
+            }
         }
         if (!online(ctx)) return
-        download(ctx, loc.latitude, loc.longitude, styleUrl)
+        if (newZone) download(ctx, loc.latitude, loc.longitude, styleUrl, true)
+        else download(ctx, p.getFloat("lat", 0f).toDouble(), p.getFloat("lon", 0f).toDouble(), styleUrl, false)
     }
 
     /** Fuerza la descarga de la zona actual (desde el menú). */
     fun downloadNow(ctx: Context, loc: Location?, styleUrl: String) {
         if (loc == null) { onStatus?.invoke("Sin posición GPS todavía"); return }
         if (!online(ctx)) { onStatus?.invoke("Sin conexión para descargar"); return }
-        download(ctx, loc.latitude, loc.longitude, styleUrl)
+        download(ctx, loc.latitude, loc.longitude, styleUrl, true)
     }
 
-    private fun download(ctx: Context, lat: Double, lon: Double, styleUrl: String) {
+    private fun download(ctx: Context, lat: Double, lon: Double, styleUrl: String, newZone: Boolean) {
         val app = ctx.applicationContext
+        try {
+            org.maplibre.android.MapLibre.getInstance(app)
+            VectorMapPanel.setupHttp(app)
+        } catch (e: Throwable) { Diag.add("MAPA offline init: $e"); return }
         downloading = true
         startedAt = SystemClock.elapsedRealtime()
         val dLat = RADIUS_KM / 111.32
@@ -101,7 +112,7 @@ object OfflineMaps {
                                 if (status.isComplete) {
                                     offlineRegion.setDownloadState(OfflineRegion.STATE_INACTIVE)
                                     offlineRegion.setObserver(null)
-                                    finished(app, lat, lon, styleUrl, status)
+                                    finished(app, lat, lon, styleUrl, status, newZone)
                                     return
                                 }
                                 if (status.requiredResourceCount > 0) {
@@ -137,10 +148,13 @@ object OfflineMaps {
         }
     }
 
-    private fun finished(ctx: Context, lat: Double, lon: Double, styleUrl: String, st: OfflineRegionStatus) {
+    private fun finished(ctx: Context, lat: Double, lon: Double, styleUrl: String, st: OfflineRegionStatus,
+                         newZone: Boolean) {
         downloading = false
-        prefs(ctx).edit().putFloat("lat", lat.toFloat()).putFloat("lon", lon.toFloat())
-            .putString("style", styleUrl).putLong("bytes", st.completedResourceSize).apply()
+        val p = prefs(ctx)
+        val styles = if (newZone) setOf(styleUrl) else p.getStringSet("styles", emptySet())!! + styleUrl
+        p.edit().putFloat("lat", lat.toFloat()).putFloat("lon", lon.toFloat())
+            .putStringSet("styles", styles).putLong("bytes", st.completedResourceSize).apply()
         val mb = st.completedResourceSize / (1024 * 1024)
         Diag.add("MAPA offline listo: ${st.completedTileCount} piezas, $mb MB")
         post("Mapa sin conexión listo ($mb MB)")
@@ -169,7 +183,7 @@ object OfflineMaps {
 
     /** Borra todas las zonas descargadas (desde el menú). */
     fun deleteAll(ctx: Context) {
-        prefs(ctx).edit().remove("lat").remove("lon").remove("style").apply()
+        prefs(ctx).edit().remove("lat").remove("lon").remove("styles").apply()
         try {
             OfflineManager.getInstance(ctx.applicationContext).listOfflineRegions(
                 object : OfflineManager.ListOfflineRegionsCallback {
