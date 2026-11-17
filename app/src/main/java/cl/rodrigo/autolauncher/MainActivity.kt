@@ -36,7 +36,7 @@ class MainActivity : Activity() {
     private var frame: CockpitFrame? = null
     private var speedBar: LedBar? = null
     private var tach: TachView? = null
-    private var mapPanel: MapPanel? = null
+    private var mapPanel: MapUi? = null
     private var callPanel: CallPanel? = null
     private var showMap = false
     private var vuBar: LedBar? = null
@@ -264,6 +264,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        mapPanel?.destroy()
         Music.unregister(this)
         super.onDestroy()
     }
@@ -400,7 +401,8 @@ class MainActivity : Activity() {
             "Llamadas: aprender con una llamada de prueba",
             "Fondo: " + when (Prefs.theme(this)) { "light" -> "Gris claro"; "aurora" -> "Aurora"; "graphite" -> "Grafito"; "auto" -> "Automático (claro de día)"; else -> "Oscuro" },
             "Saludo: " + Greeter.text(this) + (if (Greeter.voice(this)) " · con voz" else " · sin voz"),
-            "Mapa: " + when (mapMode()) { "light" -> "Claro"; "dark" -> "Oscuro"; else -> "Automático (según el fondo)" },
+            "Mapa: " + when (mapMode()) { "light" -> "Claro"; "dark" -> "Oscuro"; else -> "Automático (según el fondo)" } +
+                (if (mapEngine() == "vector") " · nuevo" else " · clásico"),
         )
         AlertDialog.Builder(this).setItems(items) { _, which ->
             when (which) {
@@ -445,8 +447,10 @@ class MainActivity : Activity() {
                     }.show()
                 9 -> greetingMenu()
                 10 -> AlertDialog.Builder(this)
-                    .setItems(arrayOf("Automático (claro u oscuro según el fondo)", "Siempre claro", "Siempre oscuro")) { _, w ->
-                        setMapMode(listOf("auto", "light", "dark")[w])
+                    .setItems(arrayOf("Automático (claro u oscuro según el fondo)", "Siempre claro", "Siempre oscuro",
+                        "Mapa nuevo (nombres de calles siempre derechos)", "Mapa clásico")) { _, w ->
+                        if (w <= 2) setMapMode(listOf("auto", "light", "dark")[w])
+                        else setMapEngine(if (w == 3) "vector" else "classic")
                     }.show()
             }
         }.show()
@@ -591,8 +595,8 @@ class MainActivity : Activity() {
             // Sin conexión no se cargan los mapas: se muestra el velocímetro (salvo que lo pidas)
             val eff = showMap && (netOnline || mapForcedOffline)
             if (eff && mapPanel == null) {
-                mapPanel = try { MapPanel(this) } catch (e: Throwable) { null }
-                mapPanel?.let { box.addView(it, android.widget.FrameLayout.LayoutParams(-1, -1)); it.setDark(mapDarkNow()) }
+                mapPanel = createMap()
+                mapPanel?.let { box.addView(it as View, android.widget.FrameLayout.LayoutParams(-1, -1)); it.setDark(mapDarkNow()) }
                 lastLocation?.let { mapPanel?.onLocation(it, 0) }
             }
             box.visibility = if (eff) View.VISIBLE else View.GONE
@@ -999,6 +1003,27 @@ class MainActivity : Activity() {
         "dark" -> true
         else -> !themeIsLight
     }
+    private fun mapEngine(): String =
+        getSharedPreferences("launcher", MODE_PRIVATE).getString("map_engine", "vector") ?: "vector"
+
+    /** Mapa vectorial si la radio lo soporta; si falla, el clásico. */
+    private fun createMap(): MapUi? {
+        if (mapEngine() == "vector" && VectorMapPanel.supported(this)) {
+            try { return VectorMapPanel(this) } catch (e: Throwable) { Diag.add("MAPA vectorial falló: $e") }
+        }
+        return try { MapPanel(this) } catch (e: Throwable) { null }
+    }
+
+    private fun setMapEngine(e: String) {
+        if (e == mapEngine()) return
+        getSharedPreferences("launcher", MODE_PRIVATE).edit().putString("map_engine", e).apply()
+        mapPanel?.let { p -> (p as View).let { (it.parent as? android.view.ViewGroup)?.removeView(it) }; p.destroy() }
+        mapPanel = null
+        mapApply?.invoke()
+        if (e == "vector" && !VectorMapPanel.supported(this))
+            Toast.makeText(this, "Esta radio no soporta el mapa nuevo (OpenGL ES 3.0): se usa el clásico", Toast.LENGTH_LONG).show()
+    }
+
     private fun setMapMode(m: String) {
         getSharedPreferences("launcher", MODE_PRIVATE).edit().putString("map_mode", m).apply()
         mapPanel?.setDark(mapDarkNow())

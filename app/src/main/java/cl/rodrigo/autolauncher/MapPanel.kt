@@ -13,11 +13,20 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import java.io.File
 
+/** Lo que MainActivity necesita de cualquier mapa (clásico u vectorial). */
+interface MapUi {
+    fun onLocation(loc: Location, kmh: Int)
+    fun setDark(dark: Boolean)
+    fun resume()
+    fun pause()
+    fun destroy() {}
+}
+
 /**
- * Mapa circular del mismo tamaño que el velocímetro.
- * Gira con la dirección de avance (el auto siempre apunta hacia arriba) y sigue el GPS.
+ * Mapa clásico (osmdroid, imágenes de OpenStreetMap). Respaldo cuando la radio no
+ * soporta el mapa vectorial. Gira con la dirección de avance y sigue el GPS.
  */
-class MapPanel(ctx: Context) : FrameLayout(ctx) {
+class MapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
 
     private val map: MapView
     private val speedBadge: SpeedBadge
@@ -27,7 +36,7 @@ class MapPanel(ctx: Context) : FrameLayout(ctx) {
     private var darkFilter: android.graphics.ColorFilter? = null
 
     /** true = mapa oscuro (colores invertidos), false = colores normales para el día. */
-    fun setDark(dark: Boolean) {
+    override fun setDark(dark: Boolean) {
         val o = map.overlayManager.tilesOverlay
         o.setColorFilter(if (dark) darkFilter else null)
         o.loadingBackgroundColor = if (dark) Color.parseColor("#0B0B0C") else Color.parseColor("#E8E6E1")
@@ -90,7 +99,7 @@ class MapPanel(ctx: Context) : FrameLayout(ctx) {
             Gravity.BOTTOM or Gravity.END).apply { bottomMargin = (6 * dp).toInt(); rightMargin = (12 * dp).toInt() })
     }
 
-    fun onLocation(loc: Location, kmh: Int) {
+    override fun onLocation(loc: Location, kmh: Int) {
         if (visibility != View.VISIBLE) return
         val p = GeoPoint(loc.latitude, loc.longitude)
         // Zoom según la velocidad: más cerca en ciudad, más lejos en carretera
@@ -107,8 +116,8 @@ class MapPanel(ctx: Context) : FrameLayout(ctx) {
         speedBadge.setSpeed(kmh)
     }
 
-    fun resume() = map.onResume()
-    fun pause() = map.onPause()
+    override fun resume() = map.onResume()
+    override fun pause() = map.onPause()
 }
 
 /** Círculo con la velocidad: verde hasta 70, ámbar hasta 100 y rojo sobre 100 km/h. */

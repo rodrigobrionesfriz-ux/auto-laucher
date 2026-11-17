@@ -10,6 +10,8 @@ android {
     defaultConfig {
         applicationId = "cl.rodrigo.autolauncher"
         minSdk = 21
+        // Solo ARM (la radio es ARM): evita sumar librerías de x86 al APK
+        ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
         targetSdk = 34
         val run = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
         versionCode = run
@@ -43,4 +45,6 @@ android {
 dependencies {
     // Mapa OpenStreetMap (sin cuenta de Google)
     implementation("org.osmdroid:osmdroid-android:6.1.18")
+    // Mapa vectorial: nombres de calles que se mantienen derechos al girar
+    implementation("org.maplibre.gl:android-sdk:11.8.0")
 }
