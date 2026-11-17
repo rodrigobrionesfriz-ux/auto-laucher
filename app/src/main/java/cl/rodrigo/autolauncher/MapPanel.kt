@@ -90,7 +90,7 @@ class MapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
 
         // Velocidad en círculo de color (verde / ámbar / rojo)
         speedBadge = SpeedBadge(ctx)
-        addView(speedBadge, LayoutParams((84 * dp).toInt(), (84 * dp).toInt(),
+        addView(speedBadge, LayoutParams((100 * dp).toInt(), (100 * dp).toInt(),
             Gravity.BOTTOM or Gravity.START).apply { leftMargin = (14 * dp).toInt(); bottomMargin = (14 * dp).toInt() })
 
         addView(TextView(ctx).apply {
@@ -103,7 +103,7 @@ class MapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
         if (visibility != View.VISIBLE) return
         val p = GeoPoint(loc.latitude, loc.longitude)
         // Zoom según la velocidad: más cerca en ciudad, más lejos en carretera
-        val z = when { kmh > 90 -> 15.0; kmh > 50 -> 16.0; else -> 17.0 }
+        val z = VectorMapPanel.zoomFor(kmh)
         if (!hasFix) { map.controller.setZoom(z); map.controller.setCenter(p); hasFix = true; lastZoom = z }
         else {
             if (z != lastZoom) { map.controller.zoomTo(z, 800L); lastZoom = z }
@@ -195,26 +195,26 @@ class HeadingOverlay(ctx: Context, private val carOffsetY: Float) : View(ctx) {
         val card = names[(((shown + 22.5f) % 360) / 45).toInt() % 8]
         val deg = "${shown.toInt()}°"
         pText.typeface = android.graphics.Typeface.DEFAULT_BOLD
-        pText.textSize = 20f * dp
+        pText.textSize = 25f * dp
         val w1 = pText.measureText(card)
         pText.typeface = tfBold
-        pText.textSize = 15f * dp
+        pText.textSize = 19f * dp
         val w2 = pText.measureText(deg)
-        val gap = 10f * dp
+        val gap = 12f * dp
         val tw = w1 + gap + w2
         val top = 12f * dp
-        val h = 40f * dp
+        val h = 50f * dp
         pFill.color = Color.argb(195, 16, 18, 21)
-        c.drawRoundRect(cx - tw / 2 - 18f * dp, top, cx + tw / 2 + 18f * dp, top + h, h / 2, h / 2, pFill)
+        c.drawRoundRect(cx - tw / 2 - 22f * dp, top, cx + tw / 2 + 22f * dp, top + h, h / 2, h / 2, pFill)
         val base = top + h / 2
         val x0 = cx - tw / 2
         pText.textAlign = android.graphics.Paint.Align.LEFT
         pText.typeface = android.graphics.Typeface.DEFAULT_BOLD
-        pText.textSize = 20f * dp
+        pText.textSize = 25f * dp
         pText.color = Color.parseColor("#3EE0B4")
         c.drawText(card, x0, base - (pText.descent() + pText.ascent()) / 2, pText)
         pText.typeface = tfBold
-        pText.textSize = 15f * dp
+        pText.textSize = 19f * dp
         pText.color = Color.WHITE
         c.drawText(deg, x0 + w1 + gap, base - (pText.descent() + pText.ascent()) / 2, pText)
         pText.textAlign = android.graphics.Paint.Align.CENTER

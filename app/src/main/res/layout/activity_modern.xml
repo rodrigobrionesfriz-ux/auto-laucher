@@ -349,8 +349,8 @@
                         <TextClock
                             android:id="@+id/clock"
                             android:layout_width="match_parent"
-                            android:layout_height="46dp"
-                            android:autoSizeMaxTextSize="40sp"
+                            android:layout_height="60dp"
+                            android:autoSizeMaxTextSize="54sp"
                             android:autoSizeMinTextSize="20sp"
                             android:autoSizeStepGranularity="1sp"
                             android:autoSizeTextType="uniform"
@@ -360,27 +360,8 @@
                             android:includeFontPadding="false"
                             android:maxLines="1"
                             android:textColor="@color/text"
-                            android:textSize="40sp"
+                            android:textSize="54sp"
                             android:textStyle="bold" />
-
-                        <TextClock
-                            android:id="@+id/cardDate"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:format12Hour="dd/MM/yyyy"
-                            android:format24Hour="dd/MM/yyyy"
-                            android:textColor="@color/text_dim"
-                            android:textSize="17sp" />
-
-                        <TextClock
-                            android:id="@+id/cardDay"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:format12Hour="EEEE"
-                            android:format24Hour="EEEE"
-                            android:textColor="@color/text_dim"
-                            android:textSize="17sp" />
                     </LinearLayout>
                 </LinearLayout>
 

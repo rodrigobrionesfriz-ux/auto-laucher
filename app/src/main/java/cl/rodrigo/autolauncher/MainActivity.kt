@@ -972,8 +972,6 @@ class MainActivity : Activity() {
             if (auroraF) Color.parseColor("#DDE3F0") else cDim)
         // Tarjeta del reloj (sigue el color de la tarjeta, no del fondo)
         findViewById<AnalogClockView>(R.id.analog)?.day = dayTheme
-        for (id in intArrayOf(R.id.cardDate, R.id.cardDay))
-            findViewById<android.widget.TextClock>(id)?.setTextColor(cDim)
     }
 
     private fun greetingText(): String = Greeter.text(this)

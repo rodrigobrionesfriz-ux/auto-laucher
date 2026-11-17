@@ -47,6 +47,15 @@ class VectorMapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
             } catch (e: Throwable) { Diag.add("MAPA http: $e") }
         }
 
+        /**
+         * Zoom continuo según la velocidad: detenido 17,5 (muy cerca) y baja de a poco
+         * hasta 14 a 120 km/h o más. Se redondea a 0,25 para no reajustar por cada km/h.
+         */
+        fun zoomFor(kmh: Int): Double {
+            val f = (kmh.coerceIn(0, 120)) / 120.0
+            return Math.round((17.5 - 3.5 * f) * 4) / 4.0
+        }
+
         /** MapLibre 11 necesita OpenGL ES 3.0. */
         fun supported(ctx: Context): Boolean = try {
             val am = ctx.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -99,7 +108,7 @@ class VectorMapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
         addView(heading, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
 
         speedBadge = SpeedBadge(ctx)
-        addView(speedBadge, LayoutParams((84 * dp).toInt(), (84 * dp).toInt(),
+        addView(speedBadge, LayoutParams((100 * dp).toInt(), (100 * dp).toInt(),
             Gravity.BOTTOM or Gravity.START).apply { leftMargin = (14 * dp).toInt(); bottomMargin = (14 * dp).toInt() })
         // Estado de la descarga sin conexión (abajo a la derecha)
         status = android.widget.TextView(ctx).apply {
@@ -149,7 +158,7 @@ class VectorMapPanel(ctx: Context) : FrameLayout(ctx), MapUi {
             heading.setBearing(loc.bearing)
         }
         // Zoom según la velocidad: más cerca en ciudad, más lejos en carretera
-        val z = when { kmh > 90 -> 14.5; kmh > 50 -> 15.5; else -> 16.5 }
+        val z = zoomFor(kmh)
         val pos = CameraPosition.Builder()
             .target(LatLng(loc.latitude, loc.longitude))
             .zoom(z).bearing(bearing.toDouble()).tilt(30.0).build()
