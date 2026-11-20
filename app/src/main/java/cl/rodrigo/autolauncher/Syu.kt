@@ -173,6 +173,10 @@ object Syu {
 
     private fun onUpdate(module: Int, code: Int, ints: IntArray?, flts: FloatArray?, strs: Array<String?>?) {
         try { Calls.onSyu(module, code, ints, strs) } catch (e: Exception) {}
+        // Títulos, artista, álbum y nombre del teléfono no cuentan (una canción puede llamarse "Tidal")
+        if (module == 2 && code !in intArrayOf(0, 1, 26, 7)) strs?.filterNotNull()?.forEach { t ->
+            if (Music.btAppNameOf(t) != null) Music.syuPlayer = t
+        }
         if (module == BT_MODULE) {
             val first = strs?.firstOrNull()
             when (code) {

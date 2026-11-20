@@ -253,7 +253,9 @@ object Music {
                         ?: try { m.getLong(k).toString() } catch (e: Exception) { "?" }
                     "$k = $v"
                 } ?: "(sin metadatos)"
-                "• ${c.packageName}  estado=${c.playbackState?.state} pos=${c.playbackState?.position}\n   $keys"
+                val extra = "cola=${c.queueTitle} extras=${dump(c.extras)} acciones=" +
+                    (c.playbackState?.customActions?.joinToString(",") { it.action } ?: "-")
+                "• ${c.packageName}  estado=${c.playbackState?.state} pos=${c.playbackState?.position}\n   $keys\n   $extra"
             }
         } catch (e: Exception) {
             "Error: ${e.message}"
@@ -280,6 +282,41 @@ object Music {
     }
 
     // ---------- Datos del servicio interno SYU (música Bluetooth) ----------
+    /** Apps conocidas, por si el teléfono manda su nombre en algún campo. */
+    private val KNOWN_APPS = listOf(
+        "tidal" to "TIDAL", "spotify" to "Spotify", "youtube music" to "YouTube Music",
+        "youtube" to "YouTube", "deezer" to "Deezer", "apple music" to "Apple Music",
+        "amazon music" to "Amazon Music", "soundcloud" to "SoundCloud", "qobuz" to "Qobuz",
+        "radio garden" to "Radio Garden", "tunein" to "TuneIn", "audible" to "Audible")
+
+    fun btAppNameOf(t: String): String? {
+        val low = t.lowercase()
+        return KNOWN_APPS.firstOrNull { low.contains(it.first) }?.second
+    }
+
+    /** Último nombre de reproductor que llegó por el servicio de la radio (SYU). */
+    @Volatile var syuPlayer: String? = null
+
+    /**
+     * Intenta saber qué app del teléfono suena por Bluetooth: la mayoría de los teléfonos
+     * no lo envía, pero algunos lo mandan como nombre de la cola, en extras o en metadatos.
+     */
+    fun btAppName(c: MediaController?): String? {
+        val texts = ArrayList<String>()
+        syuPlayer?.let { texts.add(it) }
+        c?.queueTitle?.toString()?.let { texts.add(it) }
+        c?.extras?.let { b -> for (k in b.keySet()) { @Suppress("DEPRECATION") (b.get(k) as? CharSequence)?.let { texts.add(it.toString()) } } }
+        c?.metadata?.let { m ->
+            for (k in listOf(MediaMetadata.METADATA_KEY_WRITER, MediaMetadata.METADATA_KEY_COMPOSER,
+                    MediaMetadata.METADATA_KEY_GENRE, MediaMetadata.METADATA_KEY_AUTHOR)) m.getString(k)?.let { texts.add(it) }
+        }
+        for (t in texts) {
+            val low = t.lowercase()
+            KNOWN_APPS.firstOrNull { low.contains(it.first) }?.let { return it.second }
+        }
+        return null
+    }
+
     @Volatile var syuTitle: String? = null
     @Volatile var syuArtist: String? = null
     @Volatile var syuAlbum: String? = null
@@ -307,7 +344,8 @@ object Music {
             title = title,
             artist = syuArtist?.takeIf { it.isNotBlank() },
             album = syuAlbum?.takeIf { it.isNotBlank() && it != title },
-            source = if (device != null) "Bluetooth · $device" else "Bluetooth",
+            source = btAppName(bt)?.let { "$it · Bluetooth" }
+                ?: if (device != null) "Bluetooth · $device" else "Bluetooth",
             playing = state == null || state.state == PlaybackState.STATE_PLAYING,
             durationMs = -1,
             positionMs = livePosition(state),
@@ -326,8 +364,8 @@ object Music {
             val art = meta.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
                 ?: meta.getBitmap(MediaMetadata.METADATA_KEY_ART)
             // Algunas radios ponen el nombre de la app del teléfono como "escritor" o "compositor"
-            val extraSource = meta.getString(MediaMetadata.METADATA_KEY_WRITER)
             val label = appLabel(ctx, c.packageName)
+            val extraSource = if (label == "Bluetooth") btAppName(c) else null
             return NowPlaying(
                 title = title,
                 artist = meta.getString(MediaMetadata.METADATA_KEY_ARTIST)

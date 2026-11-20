@@ -137,6 +137,21 @@ class MainActivity : Activity() {
             Apps.slotFor("phone")?.let { Apps.open(this, it) {} }
         }
         if (cockpit) findViewById<TextView>(R.id.clock).typeface = Fonts.bold(this)
+        // Aleatorio y repetir (diseño Moderno)
+        PlayModes.init(this)
+        findViewById<View>(R.id.btnShuffle)?.setOnClickListener {
+            val ok = PlayModes.toggleShuffle(this)
+            updateModeButtons()
+            Toast.makeText(this, (if (PlayModes.shuffle) "Aleatorio activado" else "Aleatorio desactivado") +
+                (if (ok) "" else " (el reproductor no respondió)"), Toast.LENGTH_SHORT).show()
+        }
+        findViewById<View>(R.id.btnRepeat)?.setOnClickListener {
+            val ok = PlayModes.cycleRepeat(this)
+            updateModeButtons()
+            Toast.makeText(this, when (PlayModes.repeat) {
+                PlayModes.REPEAT_ALL -> "Repetir todas"; PlayModes.REPEAT_ONE -> "Repetir una"; else -> "Repetir desactivado"
+            } + (if (ok) "" else " (el reproductor no respondió)"), Toast.LENGTH_SHORT).show()
+        }
         findViewById<View>(R.id.btnMusic)?.setOnClickListener { Apps.open(this, Apps.musicSlot) {} }
         findViewById<View>(R.id.btnMusic)?.setOnLongClickListener { Apps.pick(this, Apps.musicSlot) {}; true }
         setupOdometer()
@@ -883,8 +898,9 @@ class MainActivity : Activity() {
         findViewById<TextView>(R.id.odoTrip)?.setTextColor(cAccent)
         musicSource.setTextColor(cAccent)
         tintSourceIcon(musicSource, cAccent)
-        val btnIds = if (modern) intArrayOf(R.id.btnPhone, R.id.btnPrev, R.id.btnPlay, R.id.btnNext,
-                R.id.btnMusic, R.id.btnTripReset)
+        modeOffColor = cText
+        modeOnColor = cAccent
+        val btnIds = if (modern) intArrayOf(R.id.btnPrev, R.id.btnPlay, R.id.btnNext, R.id.btnTripReset)
             else intArrayOf(R.id.btnApps, R.id.btnMapToggle, R.id.btnMapStyle, R.id.btnPhone,
                 R.id.btnPrev, R.id.btnPlay, R.id.btnNext, R.id.btnMusic, R.id.btnTripReset)
         for (id in btnIds) {
@@ -909,6 +925,32 @@ class MainActivity : Activity() {
                 dock.getChildAt(i).findViewById<TextView>(R.id.tileLabel)?.setTextColor(lblColor)
             }
         }
+    }
+
+    // ---- Botones de aleatorio / repetir ----
+    private var modeOffColor = Color.WHITE
+    private var modeOnColor = Color.parseColor("#3EE0B4")
+    private var modesCheckedAt = 0L
+
+    private fun updateModeButtons() {
+        val sh = findViewById<ImageButton>(R.id.btnShuffle) ?: return
+        val rp = findViewById<ImageButton>(R.id.btnRepeat) ?: return
+        val off = Color.argb(130, Color.red(modeOffColor), Color.green(modeOffColor), Color.blue(modeOffColor))
+        sh.imageTintList = android.content.res.ColorStateList.valueOf(if (PlayModes.shuffle) modeOnColor else off)
+        rp.imageTintList = android.content.res.ColorStateList.valueOf(
+            if (PlayModes.repeat != PlayModes.REPEAT_OFF) modeOnColor else off)
+        rp.setImageResource(if (PlayModes.repeat == PlayModes.REPEAT_ONE) R.drawable.ic_repeat_one else R.drawable.ic_repeat)
+    }
+
+    /** Lee cada 3 s si el teléfono informa cambios hechos desde él mismo. */
+    private fun pollModes() {
+        if (!modern) return
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - modesCheckedAt < 3000) return
+        modesCheckedAt = now
+        val s0 = PlayModes.shuffle; val r0 = PlayModes.repeat
+        PlayModes.refresh(this)
+        if (s0 != PlayModes.shuffle || r0 != PlayModes.repeat) updateModeButtons()
     }
 
     /** Diseño Moderno: tarjetas flotantes con esquinas redondeadas, borde fino y sombra. */
@@ -947,6 +989,7 @@ class MainActivity : Activity() {
             if (auroraF) Color.parseColor("#DDE3F0") else cDim)
         // Tarjeta del reloj (sigue el color de la tarjeta, no del fondo)
         findViewById<AnalogClockView>(R.id.analog)?.day = dayTheme
+        updateModeButtons()
     }
 
     private fun greetingText(): String = Greeter.text(this)
@@ -1149,6 +1192,7 @@ class MainActivity : Activity() {
     // ---------- Ciclo de cada segundo ----------
 
     private fun tick() {
+        pollModes()
         val now = System.currentTimeMillis()
         val fixAge = now - lastFixAt
 

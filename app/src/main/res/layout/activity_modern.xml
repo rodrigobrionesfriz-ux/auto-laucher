@@ -492,14 +492,14 @@
                         android:orientation="horizontal">
 
                         <ImageButton
-                            android:id="@+id/btnPhone"
+                            android:id="@+id/btnShuffle"
                             android:layout_width="46dp"
                             android:layout_height="46dp"
                             android:background="@drawable/bg_round"
-                            android:contentDescription="Teléfono"
+                            android:contentDescription="Aleatorio"
                             android:padding="12dp"
                             android:scaleType="fitCenter"
-                            android:src="@drawable/ic_phone"
+                            android:src="@drawable/ic_shuffle"
                             android:tint="@color/text" />
 
                         <ImageButton
@@ -539,15 +539,15 @@
                             android:tint="@color/text" />
 
                         <ImageButton
-                            android:id="@+id/btnMusic"
+                            android:id="@+id/btnRepeat"
                             android:layout_width="46dp"
                             android:layout_height="46dp"
                             android:layout_marginStart="4dp"
                             android:background="@drawable/bg_round"
-                            android:contentDescription="Música"
+                            android:contentDescription="Repetir"
                             android:padding="12dp"
                             android:scaleType="fitCenter"
-                            android:src="@drawable/ic_music"
+                            android:src="@drawable/ic_repeat"
                             android:tint="@color/text" />
                     </LinearLayout>
                 </LinearLayout>
