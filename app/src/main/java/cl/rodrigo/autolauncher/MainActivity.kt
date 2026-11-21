@@ -310,12 +310,24 @@ class MainActivity : Activity() {
             val row = inflater.inflate(if (cockpit) R.layout.item_round else R.layout.item_row, dock, false)
             setIcon(row.findViewById(R.id.tileIcon))
             row.findViewById<TextView>(R.id.tileLabel).text = label
+            if (modern) {
+                // Moderno: 3 filas completas dentro de la tarjeta (con etiqueta incluida)
+                val d = resources.displayMetrics.density
+                row.findViewById<View>(R.id.tileIcon).layoutParams.apply {
+                    width = (52 * d).toInt(); height = (52 * d).toInt()
+                }
+                (row.layoutParams as? android.view.ViewGroup.MarginLayoutParams)?.bottomMargin = (4 * d).toInt()
+                row.findViewById<TextView>(R.id.tileLabel).apply {
+                    textSize = 12f
+                    (layoutParams as? android.view.ViewGroup.MarginLayoutParams)?.topMargin = (2 * d).toInt()
+                }
+            }
             dock.addView(row)
             return row.findViewById(R.id.rowBody)
         }
 
         dock.post { applyNight(force = true) }   // re-aplica el tema a las etiquetas nuevas
-        val iconPx = ((if (modern) 56 else if (cockpit) 66 else 58) * resources.displayMetrics.density).toInt()
+        val iconPx = ((if (modern) 52 else if (cockpit) 66 else 58) * resources.displayMetrics.density).toInt()
         fun appIcon(pkg: String?, iv: ImageView): Boolean {
             if (pkg == null || pkg == Apps.SETTINGS) return false
             return try {
