@@ -24,6 +24,10 @@ object Calls {
     @Volatile var number: String? = null; private set
     @Volatile var name: String? = null; private set
     @Volatile var startAt = 0L; private set
+    /** true cuando la llamada ya se conectó (el estado cambió después de sonar/marcar). */
+    @Volatile var connected = false; private set
+    @Volatile var connectedAt = 0L; private set
+    private var firstState: Int? = null
 
     private var numberCode = -1
     private var nameCode = -1
@@ -90,7 +94,23 @@ object Calls {
         }
         val nm = if (nameCode >= 0) strings[nameCode]?.takeIf { it.isNotBlank() && !isPhone(it) } else null
         val changed = now != active || num != number || nm != name
-        if (now && !active) startAt = SystemClock.elapsedRealtime()
+        if (now && !active) {
+            startAt = SystemClock.elapsedRealtime()
+            firstState = if (stateCode >= 0) ints[stateCode] else null
+            // Sin estado aprendido no se distingue: se toma como conectada desde el inicio
+            connected = stateCode < 0
+            connectedAt = startAt
+        }
+        // Con estado aprendido: si cambia a otro valor activo, la llamada se contestó
+        if (now && active && !connected && stateCode >= 0) {
+            val v = ints[stateCode]
+            if (v != null && v != idleValue && v != firstState) {
+                connected = true
+                connectedAt = SystemClock.elapsedRealtime()
+                main.post { listener?.invoke() }
+            }
+        }
+        if (!now) connected = false
         active = now
         number = if (now) num else null
         name = if (now) nm else null

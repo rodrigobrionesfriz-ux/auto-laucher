@@ -567,6 +567,17 @@ class MainActivity : Activity() {
         val panel = CallPanel(this)
         root.addView(panel, android.widget.FrameLayout.LayoutParams(-1, -1))
         callPanel = panel
+        // Diseño Moderno: la llamada ocupa exactamente la columna izquierda, como una tarjeta más
+        if (modern) {
+            val column = findViewById<View>(R.id.weatherBox)?.parent as? View
+            column?.viewTreeObserver?.addOnGlobalLayoutListener {
+                val a = IntArray(2); val b = IntArray(2)
+                column.getLocationInWindow(a); root.getLocationInWindow(b)
+                val l = (a[0] - b[0]).toFloat(); val t = (a[1] - b[1]).toFloat()
+                val r = android.graphics.RectF(l, t, l + column.width, t + column.height)
+                if (panel.cardBounds != r) panel.cardBounds = r
+            }
+        }
         Calls.listener = { panel.refresh() }
         panel.refresh()
     }
