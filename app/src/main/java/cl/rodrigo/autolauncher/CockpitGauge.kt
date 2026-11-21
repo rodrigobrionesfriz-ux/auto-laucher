@@ -391,11 +391,30 @@ class CockpitGauge @JvmOverloads constructor(
             cx + r * 0.455f * ca, cy + r * 0.455f * sa, pTick)
         pTick.strokeCap = Paint.Cap.BUTT
 
-        // Marcha actual (la D de Orbitron parece O, va en fuente normal)
+    }
+
+    /** Marcha actual en grande, sobre el camino entre el estado GPS y la camioneta. */
+    private fun drawGear(canvas: Canvas, carTop: Float) {
+        val top = cy + r * 0.33f
+        val bottom = carTop - r * 0.02f
+        if (bottom - top < r * 0.08f) return
+        val mid = (top + bottom) / 2
+        val size = minOf(r * 0.17f, (bottom - top) * 0.9f)
+        // La D de Orbitron parece O: letra normal en negrita
         pText.typeface = android.graphics.Typeface.DEFAULT_BOLD
-        pText.textSize = r * 0.07f
+        pText.textSize = size
+        val txt = "D$tachGear"
+        val tw = pText.measureText(txt)
+        // Placa oscura con borde ámbar para que se lea sobre el camino
+        val padX = size * 0.35f; val padY = size * 0.16f
+        val rect = android.graphics.RectF(cx - tw / 2 - padX, mid - size * 0.5f - padY,
+            cx + tw / 2 + padX, mid + size * 0.5f + padY)
+        pFill.color = Color.argb(200, 16, 18, 21)
+        canvas.drawRoundRect(rect, size * 0.3f, size * 0.3f, pFill)
+        pLine.color = Color.argb(200, 255, 181, 71); pLine.strokeWidth = r * 0.01f
+        canvas.drawRoundRect(rect, size * 0.3f, size * 0.3f, pLine)
         pText.color = Color.parseColor("#FFB547")
-        canvas.drawText("D$tachGear", cx - r * 0.43f, cy + r * 0.16f, pText)
+        canvas.drawText(txt, cx, mid - (pText.descent() + pText.ascent()) / 2, pText)
     }
 
     private fun speedColor(v: Float, base: Int) = when {
@@ -601,6 +620,7 @@ class CockpitGauge @JvmOverloads constructor(
         val ch = cw * ratio
         val l = (cx - cw / 2).toInt()
         val t = (h - ch - 2).toInt()
+        drawGear(canvas, t.toFloat())
         if (photo != null) {
             drawPhoto(canvas, photo, l.toFloat(), t.toFloat(), cw, ch)
         } else {
