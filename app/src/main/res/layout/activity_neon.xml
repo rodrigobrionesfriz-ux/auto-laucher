@@ -414,7 +414,7 @@
 
                             <TextView
                                 android:id="@+id/lblOdo"
-                                android:layout_width="46dp"
+                                android:layout_width="40dp"
                                 android:layout_height="wrap_content"
                                 android:text="ODO"
                                 android:textColor="#9FB0CC"
@@ -428,7 +428,7 @@
                                 android:maxLines="1"
                                 android:text="--"
                                 android:textColor="#FFFFFF"
-                                android:textSize="15sp" />
+                                android:textSize="14sp" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -438,7 +438,7 @@
 
                             <TextView
                                 android:id="@+id/lblTrip"
-                                android:layout_width="46dp"
+                                android:layout_width="40dp"
                                 android:layout_height="wrap_content"
                                 android:text="VIAJE"
                                 android:textColor="#9FB0CC"
@@ -452,7 +452,7 @@
                                 android:maxLines="1"
                                 android:text="0,0 km"
                                 android:textColor="#3EE0B4"
-                                android:textSize="15sp" />
+                                android:textSize="14sp" />
                         </LinearLayout>
                     </LinearLayout>
 

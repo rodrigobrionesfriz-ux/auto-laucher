@@ -183,7 +183,7 @@ class NeonGauge @JvmOverloads constructor(ctx: Context, attrs: AttributeSet? = n
             pTick.color = if (major) Color.parseColor("#E6ECF5") else Color.argb(140, 230, 236, 245)
             val r1 = r * 0.94f; val r2 = if (major) r * 0.80f else r * 0.86f
             c.drawLine(cx + r1 * ca, cy + r1 * sa, cx + r2 * ca, cy + r2 * sa, pTick)
-            if (major && v % 40 == 0 || v == 220) {
+            if (major && v % 40 == 0) {
                 val rn = r * 0.64f
                 c.drawText(v.toString(), cx + rn * ca, cy + rn * sa - (pText.descent() + pText.ascent()) / 2, pText)
             }
