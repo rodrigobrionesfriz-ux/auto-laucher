@@ -42,9 +42,35 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
             }
         }
 
+    /** Fondo del diseño Neón: azul noche con brillos azules y naranjos. */
+    var neon = false
+        set(v) { if (field != v) { field = v; if (width > 0) buildShaders(width.toFloat(), height.toFloat()); invalidate() } }
+
     /** false = solo fondo, sin paneles hexagonales (diseño Moderno). */
     var panels = true
         set(v) { if (field != v) { field = v; invalidate() } }
+
+    private fun buildNeonBg(w: Int, h: Int) {
+        if (w <= 0 || h <= 0) return
+        bgDay?.recycle()
+        val bmp = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp); val wf = w.toFloat(); val hf = h.toFloat()
+        val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        p.shader = LinearGradient(0f, 0f, wf, hf,
+            intArrayOf(Color.parseColor("#0B1024"), Color.parseColor("#070A18"), Color.parseColor("#04050D")),
+            floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, wf, hf, p)
+        p.shader = android.graphics.RadialGradient(wf * 0.62f, hf * 0.35f, hf * 0.8f,
+            Color.argb(70, 60, 100, 255), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, wf, hf, p)
+        p.shader = android.graphics.RadialGradient(wf * 0.15f, hf * 0.95f, hf * 0.6f,
+            Color.argb(45, 255, 106, 61), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, wf, hf, p)
+        p.shader = null
+        bgDay = bmp
+        pSpot.shader = null
+        pSpot.color = Color.TRANSPARENT
+    }
 
     /** Fondo grafito: negro con la trama de la aurora en degradados grises (tema oscuro). */
     var graphite = false
@@ -91,6 +117,7 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
     }
 
     private fun buildShaders(w: Float, h: Float) {
+        if (neon) { buildNeonBg(w.toInt(), h.toInt()); return }
         if (day) {
             pBg.shader = LinearGradient(0f, 0f, 0f, h,
                 Color.parseColor("#DCDFE4"), Color.parseColor("#BDC1C8"), Shader.TileMode.CLAMP)
@@ -235,7 +262,7 @@ class CockpitFrame @JvmOverloads constructor(context: Context, attrs: AttributeS
     override fun onDraw(canvas: Canvas) {
         val w = width.toFloat(); val h = height.toFloat()
         val bd = bgDay
-        if ((day || graphite) && bd != null) canvas.drawBitmap(bd, 0f, 0f, null)
+        if ((day || graphite || neon) && bd != null) canvas.drawBitmap(bd, 0f, 0f, null)
         else canvas.drawRect(0f, 0f, w, h, pBg)
         canvas.drawRect(0f, 0f, w, h, pSpot)
         if (!panels) return

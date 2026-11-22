@@ -31,6 +31,9 @@ object Prefs {
 
     /** Diseño Moderno: tarjetas flotantes con sombra y mapa al centro (usa la lógica del cockpit). */
     fun modern(ctx: Context): Boolean = p(ctx).getBoolean("modern", false)
+    /** Diseño Neón: paneles inclinados con borde azul (comparte la lógica del Moderno). */
+    fun neon(ctx: Context): Boolean = p(ctx).getBoolean("neon", false)
+    fun setNeon(ctx: Context, v: Boolean) = p(ctx).edit().putBoolean("neon", v).apply()
     fun setModern(ctx: Context, v: Boolean) = p(ctx).edit().putBoolean("modern", v).apply()
 
     fun logoText(ctx: Context, side: String): String = p(ctx).getString("logo_text_$side", "") ?: ""

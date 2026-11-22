@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Diseño Neón: inspirado en paneles en perspectiva con borde azul luminoso.
+  Izquierda: hora, clima y mapa. Centro: música. Derecha: velocímetro y camioneta.
+  Abajo: barra de accesos. Usa los mismos IDs que el resto para compartir la lógica.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#05070F">
+
+    <cl.rodrigo.autolauncher.CockpitFrame
+        android:id="@+id/frame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <cl.rodrigo.autolauncher.LedBar
+        android:id="@+id/vuBar"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:visibility="invisible" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:orientation="vertical"
+        android:paddingStart="18dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="10dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipChildren="false"
+            android:orientation="horizontal">
+
+            <!-- Izquierda: hora, clima, mapa -->
+            <LinearLayout
+                android:id="@+id/leftCol"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="bottom"
+                    android:orientation="horizontal">
+
+                    <TextClock
+                        android:id="@+id/clock"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:format12Hour="HH:mm"
+                        android:format24Hour="HH:mm"
+                        android:includeFontPadding="false"
+                        android:textColor="#FFFFFF"
+                        android:textSize="40sp"
+                        android:textStyle="bold" />
+
+                    <TextClock
+                        android:id="@+id/dateClock"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginBottom="6dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:format12Hour="EEEE, d 'de' MMMM"
+                        android:format24Hour="EEEE, d 'de' MMMM"
+                        android:maxLines="1"
+                        android:textColor="#FF7A50"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/weatherBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/weatherIcon"
+                        android:layout_width="34dp"
+                        android:layout_height="34dp"
+                        android:src="@drawable/wx_cloud"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/weatherTemp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="--°"
+                        android:textColor="#FFFFFF"
+                        android:textSize="28sp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/weatherDesc"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="Esperando ubicación"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/weatherRange"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:textColor="#9FB0CC"
+                            android:textSize="13sp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/weatherPlace"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <cl.rodrigo.autolauncher.RoundRectFrame
+                    android:id="@+id/mapBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="4dp"
+                    android:layout_weight="1"
+                    android:background="#0B0F1E"
+                    android:elevation="8dp">
+
+                    <ImageButton
+                        android:id="@+id/btnMapStyle"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:layout_gravity="top|end"
+                        android:layout_margin="8dp"
+                        android:background="@drawable/bg_chip"
+                        android:contentDescription="Mapa claro u oscuro"
+                        android:elevation="2dp"
+                        android:padding="10dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_contrast"
+                        android:tint="#F2F5F8" />
+                </cl.rodrigo.autolauncher.RoundRectFrame>
+            </LinearLayout>
+
+            <!-- Centro: música -->
+            <cl.rodrigo.autolauncher.NeonCard
+                android:id="@+id/musicText"
+                android:layout_width="236dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="12dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingStart="18dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="14dp"
+                app:slant="22dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Música"
+                        android:textColor="#9FB0CC"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/musicSource"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:drawablePadding="4dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:maxWidth="140dp"
+                        android:text="MÚSICA"
+                        android:textAllCaps="true"
+                        android:textColor="#FF7A50"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:layout_width="148dp"
+                    android:layout_height="148dp"
+                    android:layout_marginTop="10dp">
+
+                    <cl.rodrigo.autolauncher.ProgressRing
+                        android:id="@+id/musicProgress"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <cl.rodrigo.autolauncher.CircleFrame
+                        android:id="@+id/musicInfo"
+                        android:layout_width="118dp"
+                        android:layout_height="118dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_art_round"
+                        android:foreground="@drawable/bg_round">
+
+                        <ImageView
+                            android:id="@+id/musicArt"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="30dp"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/ic_music"
+                            android:tint="#9FB0CC" />
+
+                        <cl.rodrigo.autolauncher.SpeakerView
+                            android:id="@+id/speaker"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="gone" />
+                    </cl.rodrigo.autolauncher.CircleFrame>
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/musicTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:ellipsize="marquee"
+                    android:gravity="center"
+                    android:marqueeRepeatLimit="marquee_forever"
+                    android:singleLine="true"
+                    android:text="Sin reproducción"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/musicArtist"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:textColor="#B8C4DA"
+                    android:textSize="14sp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/musicElapsed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#9FB0CC"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="  /  "
+                        android:textColor="#9FB0CC"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/musicTotal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#9FB0CC"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <Space
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:id="@+id/btnPrev"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_neon_btn"
+                        android:contentDescription="Anterior"
+                        android:padding="13dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_prev"
+                        android:tint="#FFFFFF" />
+
+                    <ImageButton
+                        android:id="@+id/btnPlay"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:layout_marginStart="14dp"
+                        android:layout_marginEnd="14dp"
+                        android:background="@drawable/bg_neon_play"
+                        android:contentDescription="Reproducir"
+                        android:elevation="6dp"
+                        android:padding="16dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_play"
+                        android:tint="#FFFFFF" />
+
+                    <ImageButton
+                        android:id="@+id/btnNext"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_neon_btn"
+                        android:contentDescription="Siguiente"
+                        android:padding="13dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_next"
+                        android:tint="#FFFFFF" />
+                </LinearLayout>
+            </cl.rodrigo.autolauncher.NeonCard>
+
+            <!-- Derecha: velocímetro, camioneta y odómetro -->
+            <cl.rodrigo.autolauncher.NeonCard
+                android:layout_width="236dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="10dp"
+                android:orientation="vertical"
+                android:paddingStart="18dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="12dp"
+                app:slant="22dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/carName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="SsangYong Rexton"
+                        android:textColor="#9FB0CC"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_neon_badge"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:text="XVT"
+                        android:textColor="#FFFFFF"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <cl.rodrigo.autolauncher.NeonGauge
+                    android:id="@+id/gauge"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_weight="1" />
+
+                <LinearLayout
+                    android:id="@+id/odoBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_neon_pill"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingTop="6dp"
+                    android:paddingEnd="4dp"
+                    android:paddingBottom="6dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/lblOdo"
+                                android:layout_width="46dp"
+                                android:layout_height="wrap_content"
+                                android:text="ODO"
+                                android:textColor="#9FB0CC"
+                                android:textSize="11sp" />
+
+                            <TextView
+                                android:id="@+id/odoTotal"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:maxLines="1"
+                                android:text="--"
+                                android:textColor="#FFFFFF"
+                                android:textSize="15sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/lblTrip"
+                                android:layout_width="46dp"
+                                android:layout_height="wrap_content"
+                                android:text="VIAJE"
+                                android:textColor="#9FB0CC"
+                                android:textSize="11sp" />
+
+                            <TextView
+                                android:id="@+id/odoTrip"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:maxLines="1"
+                                android:text="0,0 km"
+                                android:textColor="#3EE0B4"
+                                android:textSize="15sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/btnTripReset"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_round"
+                        android:contentDescription="Reiniciar viaje"
+                        android:padding="10dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_reset"
+                        android:tint="#FFFFFF" />
+                </LinearLayout>
+            </cl.rodrigo.autolauncher.NeonCard>
+        </LinearLayout>
+
+        <!-- Barra inferior de accesos -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="62dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_neon_pill"
+            android:elevation="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingEnd="10dp">
+
+            <LinearLayout
+                android:id="@+id/dock"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal" />
+
+            <ImageButton
+                android:id="@+id/btnApps"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_round"
+                android:contentDescription="Apps"
+                android:padding="11dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_apps_modern" />
+
+            <ImageButton
+                android:id="@+id/btnMenu"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_round"
+                android:contentDescription="Ajustes del launcher"
+                android:padding="12dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_gear"
+                android:tint="#FFFFFF" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <cl.rodrigo.autolauncher.TachView
+        android:id="@+id/tach"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:visibility="invisible" />
+</FrameLayout>

@@ -53,6 +53,7 @@ class MainActivity : Activity() {
     }
     private var cockpit = false
     private var modern = false
+    private var neon = false
     private lateinit var weatherTemp: TextView
     private lateinit var weatherDesc: TextView
     private lateinit var weatherPlace: TextView
@@ -98,12 +99,14 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        modern = Prefs.modern(this)
+        neon = Prefs.neon(this)
+        modern = Prefs.modern(this) || neon
         cockpit = Prefs.cockpit(this) || modern
         Apps.cockpit = cockpit
         Greeter.speakOnStart(this)
         Icons.round = false
         setContentView(when {
+            neon -> R.layout.activity_neon
             modern -> R.layout.activity_modern
             cockpit -> R.layout.activity_cockpit
             else -> R.layout.activity_main
@@ -117,7 +120,9 @@ class MainActivity : Activity() {
         logoRefreshers["car"] = { setCarMode("custom") }
         frame = findViewById(R.id.frame)
         if (modern) frame?.panels = false
-        setupMap(gaugeView as? CockpitGauge)
+        frame?.neon = neon
+        findViewById<View>(R.id.btnMenu)?.setOnClickListener { settingsMenu() }
+        if (neon) setupNeonMap() else setupMap(gaugeView as? CockpitGauge)
         if (cockpit) setupCallPanel()
         speedBar = findViewById(R.id.speedBar)
         vuBar = findViewById<LedBar>(R.id.vuBar)?.apply { vu = true }
@@ -310,7 +315,15 @@ class MainActivity : Activity() {
             val row = inflater.inflate(if (cockpit) R.layout.item_round else R.layout.item_row, dock, false)
             setIcon(row.findViewById(R.id.tileIcon))
             row.findViewById<TextView>(R.id.tileLabel).text = label
-            if (modern) {
+            if (neon) {
+                // Neón: solo ícono, en la barra inferior
+                val d = resources.displayMetrics.density
+                row.findViewById<View>(R.id.tileIcon).layoutParams.apply {
+                    width = (44 * d).toInt(); height = (44 * d).toInt()
+                }
+                row.findViewById<View>(R.id.tileLabel).visibility = View.GONE
+                row.layoutParams = android.widget.LinearLayout.LayoutParams((58 * d).toInt(), -2)
+            } else if (modern) {
                 // Moderno: 3 filas completas dentro de la tarjeta (con etiqueta incluida)
                 val d = resources.displayMetrics.density
                 row.findViewById<View>(R.id.tileIcon).layoutParams.apply {
@@ -420,7 +433,7 @@ class MainActivity : Activity() {
         val items = arrayOf(
             "Modo noche: $modeName",
             "Aviso de velocidad: ${Prefs.speedLimit(this)} km/h",
-            "Diseño: ${if (modern) "Moderno" else if (cockpit) "Cockpit" else "Clásico"}",
+            "Diseño: ${if (neon) "Neón" else if (modern) "Moderno" else if (cockpit) "Cockpit" else "Clásico"}",
             "Luces del vehículo",
             "Buscar actualización (tienes ${Updater.currentName(this)})",
             "Diagnóstico",
@@ -450,11 +463,13 @@ class MainActivity : Activity() {
                         }.show()
                 }
                 2 -> AlertDialog.Builder(this)
-                    .setItems(arrayOf("Clásico", "Cockpit", "Moderno (tarjetas flotantes y mapa)")) { _, w ->
-                        val cur = if (modern) 2 else if (cockpit) 1 else 0
+                    .setItems(arrayOf("Clásico", "Cockpit", "Moderno (tarjetas flotantes y mapa)",
+                        "Neón (paneles inclinados con borde azul)")) { _, w ->
+                        val cur = if (neon) 3 else if (modern) 2 else if (cockpit) 1 else 0
                         if (w != cur) {
                             Prefs.setCockpit(this, w >= 1)
                             Prefs.setModern(this, w == 2)
+                            Prefs.setNeon(this, w == 3)
                             recreate()
                         }
                     }.show()
@@ -666,6 +681,27 @@ class MainActivity : Activity() {
 
     private var mapApply: (() -> Unit)? = null
 
+    /** Diseño Neón: el mapa queda siempre a la izquierda (el velocímetro va en su propia tarjeta). */
+    private fun setupNeonMap() {
+        val box = findViewById<RoundRectFrame>(R.id.mapBox) ?: return
+        findViewById<ImageButton>(R.id.btnMapStyle)?.setOnClickListener {
+            val next = when (mapMode()) { "auto" -> "light"; "light" -> "dark"; else -> "auto" }
+            setMapMode(next)
+            Toast.makeText(this, when (next) { "light" -> "Mapa claro"; "dark" -> "Mapa oscuro"; else -> "Mapa automático" },
+                Toast.LENGTH_SHORT).show()
+        }
+        fun apply() {
+            if (mapPanel == null) {
+                mapPanel = createMap()
+                mapPanel?.let { box.addView(it as View, 0, android.widget.FrameLayout.LayoutParams(-1, -1)); it.setDark(mapDarkNow()) }
+                lastLocation?.let { mapPanel?.onLocation(it, 0) }
+            }
+            mapPanel?.resume()
+        }
+        mapApply = { apply() }
+        apply()
+    }
+
     // ---------- Odómetro ----------
 
     private var odoTotal: TextView? = null
@@ -778,6 +814,18 @@ class MainActivity : Activity() {
     }
 
     private fun loadCarPhoto() {
+        (gauge as? NeonGauge)?.let { n ->
+            val f = logoFile("car")
+            val raw = android.graphics.BitmapFactory.Options().apply { inScaled = false }
+            when (carMode()) {
+                "custom" -> n.setCarPhoto(if (f.exists()) android.graphics.BitmapFactory.decodeFile(f.path) else null)
+                "drawing" -> n.setCarPhoto(null)
+                else -> n.setCarPhotos(
+                    android.graphics.BitmapFactory.decodeResource(resources, R.drawable.suv_photo, raw),
+                    android.graphics.BitmapFactory.decodeResource(resources, R.drawable.suv_photo_off, raw))
+            }
+            return
+        }
         val g = gauge as? CockpitGauge ?: return
         val f = logoFile("car")
         val raw = android.graphics.BitmapFactory.Options().apply { inScaled = false }
@@ -893,12 +941,12 @@ class MainActivity : Activity() {
     /** Fondo claro u oscuro según la preferencia de tema (el modo "auto" sigue al sol). */
     private fun applyTheme(night: Boolean) {
         val theme = Prefs.theme(this)
-        val dayTheme = when (theme) {
+        val dayTheme = if (neon) false else when (theme) {
             "light", "aurora" -> true
             "auto" -> !night
             else -> false
         }
-        val auroraF = theme == "aurora"
+        val auroraF = !neon && theme == "aurora"
         frame?.aurora = auroraF
         frame?.graphite = theme == "graphite"
         frame?.day = dayTheme
@@ -927,8 +975,9 @@ class MainActivity : Activity() {
             findViewById<TextView>(id)?.setTextColor(cDim)
         }
         findViewById<TextView>(R.id.odoTrip)?.setTextColor(cAccent)
-        musicSource.setTextColor(cAccent)
-        tintSourceIcon(musicSource, cAccent)
+        val srcColor = if (neon) Color.parseColor("#FF7A50") else cAccent
+        musicSource.setTextColor(srcColor)
+        tintSourceIcon(musicSource, srcColor)
         modeOffColor = cText
         modeOnColor = cAccent
         val btnIds = if (modern) intArrayOf(R.id.btnPrev, R.id.btnPlay, R.id.btnNext, R.id.btnTripReset)
@@ -938,7 +987,7 @@ class MainActivity : Activity() {
             findViewById<android.widget.ImageButton>(id)?.imageTintList = tint
         }
         val lightCards = dayTheme && (modern || !auroraF)
-        findViewById<View>(R.id.btnPlay)
+        if (!neon) findViewById<View>(R.id.btnPlay)
             ?.setBackgroundResource(if (lightCards) R.drawable.bg_circle_day else R.drawable.bg_circle)
         if (modern) {
             styleModern(dayTheme, auroraF, onBg, cDim)
@@ -1016,7 +1065,7 @@ class MainActivity : Activity() {
             it.setTextColor(onBg)
             it.text = greetingText()
         }
-        findViewById<android.widget.TextClock>(R.id.dateClock)?.setTextColor(
+        if (!neon) findViewById<android.widget.TextClock>(R.id.dateClock)?.setTextColor(
             if (auroraF) Color.parseColor("#DDE3F0") else cDim)
         // Tarjeta del reloj (sigue el color de la tarjeta, no del fondo)
         findViewById<AnalogClockView>(R.id.analog)?.day = dayTheme
