@@ -98,28 +98,103 @@ object Odo {
         save(ctx)
     }
 
-    /** Suma el tramo entre la lectura anterior y esta, descartando ruido del GPS. */
-    @Synchronized
-    fun onLocation(ctx: Context, loc: Location) {
-        load(ctx)
-        val now = SystemClock.elapsedRealtime()
-        val prev = last
-        val prevAt = lastAt
-        if (loc.hasAccuracy() && loc.accuracy > 30f) return   // lectura poco precisa: se ignora
-        last = loc
-        lastAt = now
-        if (prev == null) return
-        val dt = (now - prevAt) / 1000.0
-        if (dt <= 0 || dt > 30) return                         // pausa larga: no inventar distancia
-        val d = prev.distanceTo(loc).toDouble()
-        val moving = (loc.hasSpeed() && loc.speed >= 1.0f) || d / dt >= 1.5
-        if (!moving) return                                    // detenido: deriva del GPS
-        if (d / dt > 70) return                                // salto imposible (> 250 km/h)
-        val dc = d * factor
+    // ---- Robustez ante cortes del GPS ----
+    private var anchor: Location? = null       // última posición buena antes de un corte
+    private var anchorAt = 0L
+    private var warmup = 0                      // lecturas a descartar tras recuperar señal
+    private var lastFixNs = 0L
+    var gapsBridged = 0; private set
+    var rejected = 0; private set
+    var lastIssue = ""; private set
+
+    private fun fixTime(loc: Location): Long =
+        if (Build.VERSION.SDK_INT >= 17 && loc.elapsedRealtimeNanos > 0) loc.elapsedRealtimeNanos / 1_000_000
+        else SystemClock.elapsedRealtime()
+
+    private fun add(ctx: Context, meters: Double) {
+        val dc = meters * factor
         totalM += dc
         tripM += dc
         unsavedM += dc
+        val now = SystemClock.elapsedRealtime()
         if (unsavedM >= 100 || now - lastSaveAt > 60_000) save(ctx)
+    }
+
+    /**
+     * Suma la distancia recorrida. Usa sobre todo la velocidad del GPS (medida por efecto
+     * Doppler, mucho más estable que comparar posiciones) y protege el contador cuando el
+     * GPS de la radio se corta: descarta las primeras lecturas al recuperar la señal (suelen
+     * venir corridas) y rellena el tramo perdido con la distancia en línea recta, si es creíble.
+     */
+    @Synchronized
+    fun onLocation(ctx: Context, loc: Location) {
+        load(ctx)
+        val at = fixTime(loc)
+        // Lectura repetida o congelada (mismo instante): se ignora
+        val ns = if (Build.VERSION.SDK_INT >= 17) loc.elapsedRealtimeNanos else loc.time
+        if (ns == lastFixNs) return
+        lastFixNs = ns
+
+        val prev = last
+        val prevAt = lastAt
+        val bad = loc.hasAccuracy() && loc.accuracy > 25f
+        if (bad) {
+            // Señal débil: se guarda dónde estábamos para rellenar después
+            if (prev != null && anchor == null) { anchor = prev; anchorAt = prevAt }
+            last = null; warmup = 3
+            return
+        }
+        last = loc
+        lastAt = at
+        if (prev == null) {
+            if (anchor == null) return
+        }
+        val dt = if (prev != null) (at - prevAt) / 1000.0 else 0.0
+
+        // Corte: más de 5 s sin lecturas buenas
+        if (prev == null || dt > 5) {
+            if (anchor == null && prev != null) { anchor = prev; anchorAt = prevAt }
+            if (warmup == 0) warmup = 3
+        }
+        if (warmup > 0) { warmup--; if (warmup > 0) return }
+
+        // Recién recuperada la señal: rellenar el tramo perdido
+        val a = anchor
+        if (a != null) {
+            anchor = null
+            val gap = (at - anchorAt) / 1000.0
+            val d = a.distanceTo(loc).toDouble()
+            if (gap in 1.0..900.0 && d / gap <= 45.0 && d >= 20) {
+                add(ctx, d)                     // línea recta: algo menos que lo real en curvas
+                gapsBridged++
+                lastIssue = "Corte de GPS de ${gap.toInt()} s: se sumaron ${d.toInt()} m"
+                Diag.add("ODO $lastIssue")
+            } else if (gap > 900.0 || d / gap > 45.0) {
+                rejected++
+                lastIssue = "Corte de GPS de ${gap.toInt()} s descartado (salto de ${d.toInt()} m)"
+                Diag.add("ODO $lastIssue")
+            }
+            return
+        }
+        if (prev == null || dt <= 0) return
+
+        val dPos = prev.distanceTo(loc).toDouble()
+        val vPos = dPos / dt
+        val hasV = loc.hasSpeed() && prev.hasSpeed()
+        val vGps = if (hasV) (loc.speed + prev.speed) / 2.0 else vPos
+
+        if (vGps < 1.0 && vPos < 2.0) return    // detenido: deriva del GPS
+        if (vPos > 70 && (!hasV || vGps > 70)) { // salto imposible
+            rejected++
+            lastIssue = "Salto de ${dPos.toInt()} m en ${"%.0f".format(dt)} s descartado"
+            return
+        }
+        // Distancia del tramo: por velocidad Doppler si existe; si la posición salta mucho
+        // más que la velocidad (posición corrida), se confía en la velocidad.
+        val d = if (hasV) {
+            if (vPos > vGps * 1.6 + 3) vGps * dt else (vGps * dt + dPos) / 2.0
+        } else dPos
+        add(ctx, d)
     }
 
     private val miles = DecimalFormat("#,##0", DecimalFormatSymbols(Locale("es", "CL")))

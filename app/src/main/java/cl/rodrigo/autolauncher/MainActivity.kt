@@ -683,7 +683,8 @@ class MainActivity : Activity() {
             AlertDialog.Builder(this)
                 .setTitle("Odómetro")
                 .setItems(arrayOf("Ajustar kilometraje del auto", "Reiniciar viaje",
-                    "Calibrar con este viaje", "Corrección actual: %.2f%%".format(Locale.US, (Odo.factor - 1) * 100))) { _, w ->
+                    "Calibrar con este viaje", "Corrección actual: %.2f%%".format(Locale.US, (Odo.factor - 1) * 100),
+                    "Cortes del GPS: ${Odo.gapsBridged} rellenados · ${Odo.rejected} descartados")) { _, w ->
                     when (w) {
                         0 -> askOdometer()
                         1 -> confirmTripReset()
@@ -694,6 +695,13 @@ class MainActivity : Activity() {
                             .setPositiveButton("OK", null)
                             .setNeutralButton("Volver al valor por defecto") { _, _ -> Odo.resetFactor(this) }
                             .show()
+                        4 -> AlertDialog.Builder(this)
+                            .setTitle("Cortes del GPS (desde que se encendió la radio)")
+                            .setMessage("Tramos rellenados: ${Odo.gapsBridged}\nLecturas descartadas: ${Odo.rejected}\n\n" +
+                                "Último: ${Odo.lastIssue.ifEmpty { "sin problemas" }}\n\n" +
+                                "Cuando el GPS se corta, al volver se suma la distancia en línea recta " +
+                                "entre donde se perdió y donde volvió (si es creíble). Saltos imposibles se descartan.")
+                            .setPositiveButton("OK", null).show()
                     }
                 }.show()
         }
