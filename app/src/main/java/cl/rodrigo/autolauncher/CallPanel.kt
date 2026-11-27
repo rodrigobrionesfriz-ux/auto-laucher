@@ -159,13 +159,25 @@ class CallPanel(ctx: Context) : FrameLayout(ctx) {
             return b
         }
         answerBtn = btn(R.drawable.ic_phone, "#2BD96B", "Contestar") { hook(ctx) }
-        btn(R.drawable.ic_phone_end, "#FF3B30", "Colgar") { hook(ctx) }
+        btn(R.drawable.ic_phone_end, "#FF3B30", "Colgar") {
+            hook(ctx)
+            // Si la radio no avisa que se colgó, el panel se cierra igual
+            postDelayed({ if (Calls.active) Calls.forceEnd() }, 3000)
+        }
         muteBtn = btn(R.drawable.ic_mic_off, "#3A3F47", "Silenciar") { toggleMute(ctx) }
         btn(R.drawable.ic_dialpad, "#3A3F47", "Teclado") {
             Apps.slotFor("phone")?.let { Apps.open(ctx, it) {} }
         }
         col.addView(buttons, LinearLayout.LayoutParams(-1, -2).apply { topMargin = px(14) })
         addView(col, LayoutParams(px(200), px(300)))
+        // Mantener presionado el panel lo cierra (por si queda pegado)
+        isLongClickable = true
+        setOnLongClickListener {
+            Calls.forceEnd()
+            Toast.makeText(ctx, "Panel de llamada cerrado", Toast.LENGTH_SHORT).show()
+            true
+        }
+        col.setOnLongClickListener { performLongClick() }
     }
 
     /** Botón de llamada del volante: contesta si suena, cuelga si hay llamada. */

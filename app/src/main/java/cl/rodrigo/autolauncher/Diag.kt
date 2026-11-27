@@ -167,6 +167,7 @@ class DiagActivity : Activity() {
             append(Syu.report())
             append("\n\n== LLAMADAS ==\n")
             append(Calls.mappingText())
+            append("\n-- Últimos datos Bluetooth --\n").append(Calls.recentText())
             if (Calls.lastReport.isNotBlank()) append("\n").append(Calls.lastReport)
             append("\n\n== SESIONES MULTIMEDIA ==\n")
             append(Music.sessionsReport(this@DiagActivity))

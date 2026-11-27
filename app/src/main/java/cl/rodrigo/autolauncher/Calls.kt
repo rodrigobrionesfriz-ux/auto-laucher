@@ -33,7 +33,22 @@ object Calls {
     private var nameCode = -1
     private var stateCode = -1
     private var idleValue = 0
+    /** Otros valores de "reposo" que la radio usa después de colgar (se aprenden solos). */
+    private val idleValues = HashSet<Int>()
+    /** Valores que sabemos que son de llamada real (sonando/marcando/conectada): nunca se toman como reposo. */
+    private val callValues = HashSet<Int>()
+    private var app: Context? = null
     private var loaded = false
+    // Antipegado
+    private var sawNumber = false
+    private var numberGoneAt = 0L
+    private var mutedNumber: String? = null
+    private var mutedAt = 0L
+    private var lastEndAt = 0L
+    private var afterCall = false
+    private val strAt = HashMap<Int, Long>()
+    private class Rec(val t: Long, val code: Int, val int: Int?, val str: String?)
+    private val recent = ArrayDeque<Rec>()
     private val strings = HashMap<Int, String>()
     private val ints = HashMap<Int, Int>()
 
@@ -59,13 +74,33 @@ object Calls {
         stateCode = p.getInt("state", -1)
         idleValue = p.getInt("idle", 0)
         lastReport = p.getString("report", "") ?: ""
+        idleValues.clear(); callValues.clear()
+        p.getString("idles", "")?.split(",")?.mapNotNull { it.trim().toIntOrNull() }?.let { idleValues.addAll(it) }
+        callValues.clear()
+        p.getString("callvals", "")?.split(",")?.mapNotNull { it.trim().toIntOrNull() }?.let { callValues.addAll(it) }
+        app = ctx.applicationContext
         loaded = true
     }
 
     fun mappingText(): String =
         "número: ${if (numberCode >= 0) "c$numberCode" else "automático"} · " +
             "nombre: ${if (nameCode >= 0) "c$nameCode" else "?"} · " +
-            "estado: ${if (stateCode >= 0) "c$stateCode (reposo=$idleValue)" else "?"}"
+            "estado: ${if (stateCode >= 0) "c$stateCode (reposo=${(idleValues + idleValue).sorted()})" else "?"}"
+
+    /** Últimos datos del módulo Bluetooth, para el diagnóstico. */
+    @Synchronized
+    fun recentText(): String {
+        if (recent.isEmpty()) return "(sin datos)"
+        val t0 = recent.first().t
+        val sb = StringBuilder()
+        for (e in recent) {
+            sb.append("+${(e.t - t0) / 1000}s c${e.code} ")
+            if (e.int != null) sb.append("int=${e.int} ")
+            if (e.str != null) sb.append("str=${e.str}")
+            sb.append('\n')
+        }
+        return sb.toString()
+    }
 
     /** Llamado desde Syu con cada dato del módulo Bluetooth. */
     @Synchronized
@@ -73,8 +108,15 @@ object Calls {
         if (module != BT) return
         val s = sv?.firstOrNull()
         val i = iv?.takeIf { it.size == 1 }?.get(0)
-        if (s != null) strings[code] = s
+        val t = SystemClock.elapsedRealtime()
+        if (s != null) {
+            if (strings[code] != s) strAt[code] = t
+            strings[code] = s
+            if ((s != mutedNumber && isPhone(s)) || t - mutedAt > 120_000) mutedNumber = null
+        }
         if (i != null) ints[code] = i
+        recent.addLast(Rec(t, code, i, s))
+        while (recent.size > 80) recent.removeFirst()
         if (learning) {
             capture.add(Ev(SystemClock.elapsedRealtime(), code, i, s))
             if (i != null && !startInts.containsKey(code)) startInts[code] = i
@@ -85,12 +127,15 @@ object Calls {
 
     private fun evaluate() {
         // Número: casilla aprendida o cualquier texto con forma de teléfono
-        val num = if (numberCode >= 0) strings[numberCode]?.takeIf { isPhone(it) }
-            else strings.entries.firstOrNull { it.key !in known && isPhone(it.value) }?.value
-        val stateOn = if (stateCode >= 0) (ints[stateCode] ?: idleValue) != idleValue else null
+        val num = (if (numberCode >= 0) strings[numberCode]?.takeIf { isPhone(it) }
+            else strings.entries.firstOrNull { it.key !in known && isPhone(it.value) }?.value)
+            ?.takeIf { it != mutedNumber }
+        val sv = ints[stateCode] ?: idleValue
+        val stateOn = if (stateCode >= 0) (sv != idleValue && sv !in idleValues) else null
         val now = when (stateOn) {
             null -> num != null
-            else -> stateOn
+            // Con estado aprendido: también vale un número nuevo (por si la radio usa otro valor)
+            else -> stateOn || (num != null && !active && (strAt[numberCode] ?: 0L) > SystemClock.elapsedRealtime() - 3000)
         }
         val nm = if (nameCode >= 0) strings[nameCode]?.takeIf { it.isNotBlank() && !isPhone(it) } else null
         val changed = now != active || num != number || nm != name
@@ -100,6 +145,21 @@ object Calls {
             // Sin estado aprendido no se distingue: se toma como conectada desde el inicio
             connected = stateCode < 0
             connectedAt = startAt
+            sawNumber = false
+            numberGoneAt = 0L
+            // ¿Se "activó" justo después de colgar? Puede ser el estado de "llamada terminada"
+            afterCall = lastEndAt > 0 && startAt - lastEndAt < 15_000
+            if (afterCall) main.postDelayed({ checkStuck() }, 5000)
+            scheduleWatchdog()
+        }
+        if (now && num != null) {
+            if (!sawNumber) firstState?.let { protect(it) }
+            sawNumber = true; numberGoneAt = 0L
+        }
+        if (now && num == null && sawNumber && numberGoneAt == 0L) {
+            // El número desapareció: casi seguro colgaron. Se confirma en 3 s.
+            numberGoneAt = SystemClock.elapsedRealtime()
+            main.postDelayed({ checkStuck() }, 3200)
         }
         // Con estado aprendido: si cambia a otro valor activo, la llamada se contestó
         if (now && active && !connected && stateCode >= 0) {
@@ -107,10 +167,12 @@ object Calls {
             if (v != null && v != idleValue && v != firstState) {
                 connected = true
                 connectedAt = SystemClock.elapsedRealtime()
+                protect(v)
                 main.post { listener?.invoke() }
             }
         }
         if (!now) connected = false
+        if (active && !now) lastEndAt = SystemClock.elapsedRealtime()
         active = now
         number = if (now) num else null
         name = if (now) nm else null
@@ -119,6 +181,58 @@ object Calls {
             strings.entries.removeAll { it.key !in known && isPhone(it.value) }
         }
         if (changed) main.post { listener?.invoke() }
+    }
+
+    private fun protect(v: Int) {
+        idleValues.remove(v)
+        if (callValues.add(v)) app?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
+            ?.putString("callvals", callValues.joinToString(","))
+            ?.putString("idles", idleValues.joinToString(","))?.apply()
+    }
+
+    private fun scheduleWatchdog() {
+        main.removeCallbacks(watchdog)
+        main.postDelayed(watchdog, 15_000)
+    }
+
+    private val watchdog = Runnable { checkStuck() }
+
+    @Synchronized
+    private fun checkStuck() {
+        if (!active) return
+        val now = SystemClock.elapsedRealtime()
+        val numberGone = sawNumber && number == null && numberGoneAt > 0 && now - numberGoneAt >= 3000
+        // Nunca conectó, nunca hubo número y ya pasó un minuto: panel pegado
+        val ghost = !connected && !sawNumber && now - startAt > 60_000
+        // Se activó sola justo después de colgar y sin número: es el estado de "terminada"
+        val postCall = afterCall && !sawNumber && !connected && now - startAt >= 4500
+        if (numberGone || postCall) forceEnd(learn = true)
+        else if (ghost) forceEnd()
+        else if (active) main.postDelayed(watchdog, 15_000)
+    }
+
+    /**
+     * Cierra el panel aunque la radio no avise. El valor de estado en que quedó pegada
+     * se aprende como otro "reposo", así la próxima vez se cierra sola.
+     */
+    @Synchronized
+    fun forceEnd(learn: Boolean = false) {
+        if (!active) return
+        if (learn && stateCode >= 0) {
+            val v = ints[stateCode]
+            if (v != null && v != idleValue && v !in callValues && idleValues.add(v)) {
+                app?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
+                    ?.putString("idles", idleValues.joinToString(","))?.apply()
+            }
+        }
+        mutedNumber = number
+        mutedAt = SystemClock.elapsedRealtime()
+        strings.entries.removeAll { it.key !in known && isPhone(it.value) }
+        active = false; connected = false; number = null; name = null
+        lastEndAt = SystemClock.elapsedRealtime()
+        sawNumber = false; numberGoneAt = 0L
+        main.removeCallbacks(watchdog)
+        main.post { listener?.invoke() }
     }
 
     fun startLearning() = synchronized(this) {
@@ -177,6 +291,7 @@ object Calls {
     fun resetLearning(ctx: Context) {
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply()
         numberCode = -1; nameCode = -1; stateCode = -1; idleValue = 0; lastReport = ""
+        idleValues.clear(); callValues.clear()
     }
 
     // ---------- Contactos de la radio (si los hay) ----------
